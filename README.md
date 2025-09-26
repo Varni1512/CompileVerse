@@ -99,4 +99,4 @@ Follow these instructions to set up the project locally on your machine.
 Contributions are welcome! Feel free to open an issue or submit a pull request to make CompileVerse even better.
 
 ---
-Made with ❤️ by [Your Name]
+Made with ❤️ by Varnikumar Patel
