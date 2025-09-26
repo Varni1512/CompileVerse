@@ -18,7 +18,7 @@ CompileVerse is not just another online code compiler. It's an intelligent codin
 
 Here's a glimpse of CompileVerse in action:
 
-![CompileVerse Screenshot](https://via.placeholder.com/800x450?text=Your+Project+Screenshot+Here)
+![CompileVerse Screenshot](CompileVerse.png)
 
 ---
 
