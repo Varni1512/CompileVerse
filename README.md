@@ -51,7 +51,7 @@ Follow these instructions to set up the project locally on your machine.
 
 1.  **Clone the repository:**
     ```sh
-    git clone [https://github.com/your-username/CompileVerse.git](https://github.com/your-username/CompileVerse.git)
+    git clone https://github.com/Varni1512/CompileVerse.git
     cd CompileVerse
     ```
 
