@@ -15,7 +15,7 @@ app.get("/", (req, res) => {
 });
 
 app.post("/run", async (req, res) => {
-  const { language, code, input = "", analyzeComplexity = false } = req.body;
+  const { language, code, input = "" } = req.body;
 
   if (!code) {
     return res.status(400).json({ success: false, error: "Code is required." });
@@ -23,21 +23,7 @@ app.post("/run", async (req, res) => {
 
   try {
     const output = await executeCode(language, code, input);
-    let complexity = "Analysis not requested";
-    if (analyzeComplexity) {
-      try {
-        complexity = await getComplexityAnalysis(code);
-      } catch (aiErr) {
-        console.error("AI Complexity Analysis Error:", aiErr);
-        if (aiErr.status === 429 || aiErr?.error?.error?.code === "rate_limit_exceeded") {
-          complexity = "AI Limit Reached. Please try again later.";
-        } else {
-          complexity = "Analysis failed";
-        }
-      }
-    }
-
-    res.json({ output, complexity });
+    res.json({ output });
   } catch (err) {
     console.error("Execution Error:", err);
     res.status(500).json({ success: false, error: err.error || "Execution failed" });
@@ -45,7 +31,7 @@ app.post("/run", async (req, res) => {
 });
 
 app.post("/run-tests", async (req, res) => {
-  const { language, code, testCases = [], analyzeComplexity = false } = req.body;
+  const { language, code, testCases = [] } = req.body;
 
   if (!code) {
     return res.status(400).json({ success: false, error: "Code is required." });
@@ -68,24 +54,28 @@ app.post("/run-tests", async (req, res) => {
       };
     });
 
-    let complexity = "Analysis not requested";
-    if (analyzeComplexity) {
-      try {
-        complexity = await getComplexityAnalysis(code);
-      } catch (aiErr) {
-        console.error("AI Complexity Analysis Error:", aiErr);
-        if (aiErr.status === 429 || aiErr?.error?.error?.code === "rate_limit_exceeded") {
-          complexity = "AI Limit Reached. Please try again later.";
-        } else {
-          complexity = "Analysis failed";
-        }
-      }
-    }
-
-    res.json({ results: formattedResults, complexity });
+    res.json({ results: formattedResults });
   } catch (err) {
     console.error("Execution Error:", err);
     res.status(500).json({ success: false, error: err.error || "Execution failed" });
+  }
+});
+
+app.post("/analyze", async (req, res) => {
+  const { code } = req.body;
+  if (!code || code.trim() === '') {
+    return res.status(400).json({ success: false, error: "Code is required." });
+  }
+  try {
+    const complexity = await getComplexityAnalysis(code);
+    res.json({ complexity });
+  } catch (aiErr) {
+    console.error("AI Complexity Analysis Error:", aiErr);
+    if (aiErr.status === 429 || aiErr?.error?.error?.code === "rate_limit_exceeded") {
+      res.json({ complexity: "AI Limit Reached. Please try again later." });
+    } else {
+      res.json({ complexity: "Analysis failed" });
+    }
   }
 });
 

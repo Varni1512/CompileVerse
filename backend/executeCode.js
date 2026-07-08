@@ -9,12 +9,29 @@ const runExecutable = (executableCommand, args, input, options = {}) => {
     const run = spawn(executableCommand, args, options);
     let output = "", runError = "";
 
-    run.stdout.on("data", (data) => (output += data.toString()));
+    // 5 seconds timeout to kill infinite loops
+    const timeout = setTimeout(() => {
+      run.kill("SIGKILL");
+      reject({ error: "Time Limit Exceeded (Possible Infinite Loop)" });
+    }, 5000);
+
+    run.stdout.on("data", (data) => {
+      output += data.toString();
+      // Limit output to ~1MB to prevent memory crash if while(true) prints continuously
+      if (output.length > 1024 * 1024) {
+        run.kill("SIGKILL");
+        reject({ error: "Output Limit Exceeded (Too much output)" });
+      }
+    });
+
     run.stderr.on("data", (data) => (runError += data.toString()));
+    
     run.on("close", (code) => {
-      if (code !== 0) return reject({ error: runError });
+      clearTimeout(timeout);
+      if (code !== 0 && code !== null) return reject({ error: runError || "Execution failed" });
       resolve(output);
     });
+    
     run.stdin.write(input);
     run.stdin.end();
   });

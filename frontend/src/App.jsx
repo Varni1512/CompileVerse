@@ -162,6 +162,9 @@ function SimpleCompiler() {
   const [complexity, setComplexity] = useState('');
   const [activeTab, setActiveTab] = useState('output');
   const [analyzeComplexity, setAnalyzeComplexity] = useState(false);
+  const [isAnalyzing, setIsAnalyzing] = useState(false);
+  const [showBulkModal, setShowBulkModal] = useState(false);
+  const [bulkText, setBulkText] = useState('');
   const [serverStatus, setServerStatus] = useState('waking'); // 'waking', 'online', 'error'
   
   const [mode, setMode] = useState('custom'); // 'custom' or 'tests'
@@ -210,6 +213,29 @@ function SimpleCompiler() {
     });
   };
 
+  const handleBulkImport = () => {
+    if (!bulkText.trim()) return;
+    
+    const cases = bulkText.split('===').map(tc => tc.trim()).filter(tc => tc);
+    const newTestCases = [];
+    
+    cases.forEach(tc => {
+      const parts = tc.split('---');
+      if (parts.length >= 1) {
+        newTestCases.push({
+          input: parts[0].trim(),
+          expectedOutput: (parts[1] || '').trim()
+        });
+      }
+    });
+    
+    if (newTestCases.length > 0) {
+      setTestCases(newTestCases);
+    }
+    setShowBulkModal(false);
+    setBulkText('');
+  };
+
   const handleFormat = async () => {
     if (['c', 'cpp', 'java', 'py'].includes(language)) {
       try {
@@ -243,50 +269,70 @@ function SimpleCompiler() {
     setExecutionTime(null);
     setTestResults(null);
     setActiveTab('output');
+    
+    if (analyzeComplexity) {
+      setIsAnalyzing(true);
+      setComplexity('Analyzing in background...');
+    }
 
     try {
       const startTime = Date.now();
-      if (mode === 'custom') {
-        const payload = { language, code, input, analyzeComplexity };
-        const response = await fetch(`${API_URL}/run`, {
+      
+      // 1. Execute Code
+      const payload = mode === 'custom' 
+        ? { language, code, input } 
+        : { language, code, testCases };
+        
+      const endpoint = mode === 'custom' ? '/run' : '/run-tests';
+      
+      const runPromise = fetch(`${API_URL}${endpoint}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      }).then(res => res.json());
+
+      // 2. Analyze Complexity (Background)
+      let analyzePromise = null;
+      if (analyzeComplexity) {
+        analyzePromise = fetch(`${API_URL}/analyze`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(payload),
-        });
+          body: JSON.stringify({ code }),
+        }).then(res => res.json()).catch(err => ({ complexity: 'Analysis failed' }));
+      }
 
-        const data = await response.json();
-        const endTime = Date.now();
-        setExecutionTime(endTime - startTime);
+      // Wait for execution
+      const data = await runPromise;
+      const endTime = Date.now();
+      setExecutionTime(endTime - startTime);
 
-        if (response.ok) {
+      if (mode === 'custom') {
+        if (data.output !== undefined) {
           setOutput(data.output);
-          if (data.complexity) setComplexity(data.complexity);
         } else {
           setOutput("Error: " + (data.error || 'Compilation failed'));
         }
       } else {
-        const payload = { language, code, testCases, analyzeComplexity };
-        const response = await fetch(`${API_URL}/run-tests`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(payload),
-        });
-
-        const data = await response.json();
-        const endTime = Date.now();
-        setExecutionTime(endTime - startTime);
-
-        if (response.ok) {
+        if (data.results !== undefined) {
           setTestResults(data.results);
-          if (data.complexity) setComplexity(data.complexity);
         } else {
           setOutput("Error: " + (data.error || 'Execution failed'));
         }
       }
+      setIsRunning(false);
+
+      // Wait for analysis
+      if (analyzePromise) {
+        const analyzeData = await analyzePromise;
+        setComplexity(analyzeData.complexity || 'Analysis failed');
+        setIsAnalyzing(false);
+      }
+
     } catch (error) {
       setOutput("Error: " + error.message);
-    } finally {
       setIsRunning(false);
+      setIsAnalyzing(false);
+      setComplexity('Analysis failed');
     }
   };
 
@@ -302,6 +348,24 @@ function SimpleCompiler() {
     document.addEventListener('keydown', handleKeyDown);
     return () => document.removeEventListener('keydown', handleKeyDown);
   }, [language, code, input, mode, testCases, isRunning]);
+
+  const handleManualAnalyze = async () => {
+    setIsAnalyzing(true);
+    setComplexity('Analyzing in background...');
+    try {
+      const response = await fetch(`${API_URL}/analyze`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ code }),
+      });
+      const data = await response.json();
+      setComplexity(data.complexity || 'Analysis failed');
+    } catch (err) {
+      setComplexity('Analysis failed');
+    } finally {
+      setIsAnalyzing(false);
+    }
+  };
 
   const handleAiReview = async () => {
     setIsReviewing(true);
@@ -408,19 +472,19 @@ function SimpleCompiler() {
         <main className="flex-1 flex flex-col lg:flex-row gap-4 min-h-0 overflow-y-auto lg:overflow-hidden">
 
           <section className="w-full lg:w-7/12 flex flex-col min-h-0">
-            <div className={`flex-1 min-h-0 flex flex-col rounded-xl p-2 sm:p-4 shadow-lg border ${isDark
+            <div className={`flex-1 min-h-0 flex flex-col rounded-xl shadow-lg border overflow-hidden ${isDark
               ? 'bg-gray-900/80 border-purple-500/30 shadow-purple-500/20'
               : 'bg-white/90 border-gray-200 shadow-gray-300/30'
               }`}>
-
-              <div className="flex justify-between items-center mb-3 flex-shrink-0">
+              
+              <div className="flex flex-col xl:flex-row justify-between items-start xl:items-center p-2 sm:p-4 border-b flex-shrink-0 gap-3 bg-opacity-50">
                 <div className="flex items-center space-x-3">
-                  <div className={`px-3 py-1 rounded-full text-sm font-semibold bg-gradient-to-r ${currentLang.color} text-white`}>
+                  <div className={`px-3 py-1.5 rounded-full text-sm font-semibold bg-gradient-to-r ${currentLang.color} text-white`}>
                     {currentLang.name}
                   </div>
                 </div>
 
-                <div className="flex items-center space-x-2">
+                <div className="flex flex-wrap items-center gap-2">
                   <select
                     value={language}
                     onChange={(e) => {
@@ -428,7 +492,7 @@ function SimpleCompiler() {
                       setLanguage(selectedLang);
                       setOutput(''); setComplexity(''); setAiReview(''); setExecutionTime(null); setTestResults(null);
                     }}
-                    className={`px-3 py-2 rounded-lg border font-medium cursor-pointer text-sm sm:text-base ${isDark
+                    className={`px-3 py-1.5 rounded-lg border font-medium cursor-pointer text-sm ${isDark
                       ? 'bg-gray-800 text-white border-purple-500/30'
                       : 'bg-white text-gray-900 border-gray-300'
                       }`}
@@ -445,7 +509,7 @@ function SimpleCompiler() {
                       if (e.target.value !== 'light' && theme !== 'dark') setTheme('dark');
                       else if (e.target.value === 'light' && theme !== 'light') setTheme('light');
                     }}
-                    className={`px-3 py-2 rounded-lg border font-medium cursor-pointer text-sm sm:text-base hidden sm:block ${isDark
+                    className={`px-3 py-1.5 rounded-lg border font-medium cursor-pointer text-sm hidden sm:block ${isDark
                       ? 'bg-gray-800 text-white border-purple-500/30'
                       : 'bg-white text-gray-900 border-gray-300'
                       }`}
@@ -460,16 +524,15 @@ function SimpleCompiler() {
                   <button
                     onClick={handleFormat}
                     title="Format code"
-                    className={`p-2 rounded-lg cursor-pointer transition-all ${isDark ? 'bg-gray-800 hover:bg-gray-700 text-gray-300' : 'bg-gray-100 hover:bg-gray-200 text-gray-600'}`}
+                    className={`p-1.5 rounded-lg cursor-pointer transition-all ${isDark ? 'bg-gray-800 hover:bg-gray-700 text-gray-300' : 'bg-gray-100 hover:bg-gray-200 text-gray-600'}`}
                   >
                     <AlignLeft className="w-4 h-4" />
                   </button>
 
-                  {/* 3. Add the Download button to the UI */}
                   <button
                     onClick={handleDownload}
                     title="Download code"
-                    className={`p-2 rounded-lg cursor-pointer transition-all hidden sm:block ${isDark ? 'bg-gray-800 hover:bg-gray-700 text-gray-300' : 'bg-gray-100 hover:bg-gray-200 text-gray-600'}`}
+                    className={`p-1.5 rounded-lg cursor-pointer transition-all hidden sm:block ${isDark ? 'bg-gray-800 hover:bg-gray-700 text-gray-300' : 'bg-gray-100 hover:bg-gray-200 text-gray-600'}`}
                   >
                     <Download className="w-4 h-4" />
                   </button>
@@ -477,7 +540,7 @@ function SimpleCompiler() {
                   <button
                     onClick={copyToClipboard}
                     title="Copy code"
-                    className={`p-2 rounded-lg cursor-pointer transition-all ${copied ? 'bg-green-500 text-white' : isDark ? 'bg-gray-800 hover:bg-gray-700 text-gray-300' : 'bg-gray-100 hover:bg-gray-200 text-gray-600'
+                    className={`p-1.5 rounded-lg cursor-pointer transition-all ${copied ? 'bg-green-500 text-white' : isDark ? 'bg-gray-800 hover:bg-gray-700 text-gray-300' : 'bg-gray-100 hover:bg-gray-200 text-gray-600'
                       }`}
                   >
                     {copied ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
@@ -485,7 +548,7 @@ function SimpleCompiler() {
                 </div>
               </div>
 
-              <div className={`rounded-lg overflow-hidden border h-96 lg:h-auto lg:flex-1 min-h-0 ${isDark ? 'border-gray-700' : 'border-gray-200'}`}>
+              <div className={`flex-1 min-h-[300px] ${isDark ? 'border-gray-700' : 'border-gray-200'}`}>
                 <Editor
                   height="100%"
                   language={currentLang.monaco}
@@ -506,115 +569,29 @@ function SimpleCompiler() {
                   }}
                 />
               </div>
-            </div>
-          </section>
 
-          <aside className="w-full lg:w-5/12 flex flex-col space-y-4 min-h-0">
-            <div className={`rounded-xl p-4 shadow-lg border flex-shrink-0 ${isDark ? 'bg-gray-900/80 border-gray-700' : 'bg-white/90 border-gray-200'
-              }`}>
-              <div className="mb-4">
-                <div className="flex items-center justify-between mb-3">
-                  <div className={`flex items-center space-x-1 p-1 rounded-lg ${isDark ? 'bg-gray-800' : 'bg-gray-100'}`}>
-                    <button
-                      onClick={() => setMode('custom')}
-                      className={`flex items-center space-x-2 px-3 py-1.5 rounded-md text-sm font-semibold transition-all ${mode === 'custom' ? (isDark ? 'bg-gray-700 text-white shadow' : 'bg-white text-gray-900 shadow') : (isDark ? 'text-gray-400 hover:text-gray-200' : 'text-gray-500 hover:text-gray-700')}`}
-                    >
-                      <Terminal className="w-4 h-4" />
-                      <span>Custom Input</span>
-                    </button>
-                    <button
-                      onClick={() => setMode('tests')}
-                      className={`flex items-center space-x-2 px-3 py-1.5 rounded-md text-sm font-semibold transition-all ${mode === 'tests' ? (isDark ? 'bg-gray-700 text-white shadow' : 'bg-white text-gray-900 shadow') : (isDark ? 'text-gray-400 hover:text-gray-200' : 'text-gray-500 hover:text-gray-700')}`}
-                    >
-                      <FlaskConical className="w-4 h-4" />
-                      <span>Test Cases</span>
-                    </button>
-                  </div>
-                </div>
-
-                {mode === 'custom' ? (
-                  <textarea
-                    className={`w-full h-32 p-3 text-sm rounded-lg border resize-none ${isDark ? 'bg-gray-800 text-white border-gray-600 focus:border-purple-500 focus:ring-1 focus:ring-purple-500' : 'bg-gray-50 text-gray-900 border-gray-300 focus:border-purple-500 focus:ring-1 focus:ring-purple-500'} outline-none transition-all`}
-                    placeholder="Enter program input here..."
-                    value={input}
-                    onChange={(e) => setInput(e.target.value)}
-                  />
-                ) : (
-                  <div className={`flex flex-col space-y-3 h-48 overflow-y-auto pr-1 custom-scrollbar`}>
-                    {testCases.map((tc, idx) => (
-                      <div key={idx} className={`p-3 rounded-lg border ${isDark ? 'bg-gray-800 border-gray-600' : 'bg-gray-50 border-gray-200'}`}>
-                        <div className="flex justify-between items-center mb-2">
-                          <span className={`text-xs font-bold ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>TEST CASE {idx + 1}</span>
-                          {testCases.length > 1 && (
-                            <button
-                              onClick={() => setTestCases(testCases.filter((_, i) => i !== idx))}
-                              className="text-red-400 hover:text-red-500 transition-colors"
-                            >
-                              <Trash2 className="w-4 h-4" />
-                            </button>
-                          )}
-                        </div>
-                        <div className="space-y-2">
-                          <textarea
-                            className={`w-full h-12 p-2 text-xs rounded border resize-none ${isDark ? 'bg-gray-900 text-white border-gray-700' : 'bg-white text-gray-900 border-gray-300'} outline-none`}
-                            placeholder="Input"
-                            value={tc.input}
-                            onChange={(e) => {
-                              const newTc = [...testCases];
-                              newTc[idx].input = e.target.value;
-                              setTestCases(newTc);
-                            }}
-                          />
-                          <textarea
-                            className={`w-full h-12 p-2 text-xs rounded border resize-none ${isDark ? 'bg-gray-900 text-white border-gray-700' : 'bg-white text-gray-900 border-gray-300'} outline-none`}
-                            placeholder="Expected Output"
-                            value={tc.expectedOutput}
-                            onChange={(e) => {
-                              const newTc = [...testCases];
-                              newTc[idx].expectedOutput = e.target.value;
-                              setTestCases(newTc);
-                            }}
-                          />
-                        </div>
-                      </div>
-                    ))}
-                    <button
-                      onClick={() => setTestCases([...testCases, { input: '', expectedOutput: '' }])}
-                      className={`flex items-center justify-center space-x-1 py-2 rounded-lg border border-dashed transition-colors ${isDark ? 'border-gray-600 text-gray-400 hover:text-white hover:border-gray-500 hover:bg-gray-800' : 'border-gray-300 text-gray-500 hover:text-gray-800 hover:border-gray-400 hover:bg-gray-100'}`}
-                    >
-                      <Plus className="w-4 h-4" />
-                      <span className="text-sm font-semibold">Add Test Case</span>
-                    </button>
-                  </div>
-                )}
-              </div>
-
-              <div className="flex flex-col space-y-3">
-                <label className={`flex items-center space-x-2 text-sm cursor-pointer ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>
-                  <input
-                    type="checkbox"
-                    checked={analyzeComplexity}
-                    onChange={(e) => setAnalyzeComplexity(e.target.checked)}
-                    className="w-4 h-4 rounded border-gray-300 text-purple-600 focus:ring-purple-500"
-                  />
-                  <span>Analyze Time & Space Complexity (Uses AI)</span>
-                </label>
-                <div className="grid grid-cols-2 gap-3">
+              {/* ACTION FOOTER */}
+              <div className={`p-3 border-t flex flex-col sm:flex-row items-center justify-end gap-3 ${isDark ? 'border-gray-700 bg-gray-900/50' : 'border-gray-200 bg-gray-50'}`}>
+                <div className="flex items-center space-x-3 w-full sm:w-auto">
                   <button
-                    onClick={handleSubmit}
+                    onClick={() => {
+                       if (activeTab === 'custom' || activeTab === 'tests') setActiveTab('output');
+                       handleSubmit();
+                    }}
                     disabled={isRunning}
-                    className={`flex items-center justify-center cursor-pointer space-x-2 py-3 px-4 rounded-lg font-bold text-white transition-all transform hover:scale-105 ${isRunning ? 'bg-gray-500 cursor-not-allowed scale-100' : 'bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 shadow-lg shadow-purple-500/25'
-                      }`}
+                    className={`flex-1 sm:flex-none flex items-center justify-center cursor-pointer space-x-2 py-2 px-6 rounded-lg font-bold text-white transition-all transform hover:scale-105 ${isRunning ? 'bg-gray-500 cursor-not-allowed scale-100' : 'bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 shadow-md shadow-purple-500/25'}`}
                   >
-                    {isRunning ? <><div className="w-4 h-4 border-2  border-white border-t-transparent rounded-full animate-spin"></div><span>Running</span></>
+                    {isRunning ? <><div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div><span>Running</span></>
                       : <><Play className="w-4 h-4" /><span>Run</span></>}
                   </button>
 
                   <button
-                    onClick={handleAiReview}
+                    onClick={() => {
+                       setActiveTab('review');
+                       handleAiReview();
+                    }}
                     disabled={isReviewing}
-                    className={`flex items-center justify-center cursor-pointer space-x-2 py-3 px-4 rounded-lg font-bold text-white transition-all transform hover:scale-105 ${isReviewing ? 'bg-gray-500 cursor-not-allowed scale-100' : 'bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 shadow-lg shadow-emerald-500/25'
-                      }`}
+                    className={`flex-1 sm:flex-none flex items-center justify-center cursor-pointer space-x-2 py-2 px-6 rounded-lg font-bold text-white transition-all transform hover:scale-105 ${isReviewing ? 'bg-gray-500 cursor-not-allowed scale-100' : 'bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 shadow-md shadow-emerald-500/25'}`}
                   >
                     {isReviewing ? <><div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div><span>Reviewing</span></>
                       : <><Bot className="w-4 h-4" /><span>Review</span></>}
@@ -622,9 +599,98 @@ function SimpleCompiler() {
                 </div>
               </div>
             </div>
+          </section>
 
-            <div className={`flex-1 flex flex-col min-h-0 rounded-xl shadow-lg border ${isDark ? 'bg-gray-900/80 border-gray-700' : 'bg-white/90 border-gray-200'
-              }`}>
+          <aside className="w-full lg:w-5/12 flex flex-col space-y-4 min-h-0">
+            {/* TOP BOX: Input / Tests */}
+            <div className={`flex-[4] flex flex-col min-h-0 rounded-xl p-2 sm:p-3 shadow-lg border ${isDark ? 'bg-gray-900/80 border-gray-700' : 'bg-white/90 border-gray-200'}`}>
+              <div className="mb-3">
+                <div className={`inline-flex items-center space-x-1 p-1 rounded-lg ${isDark ? 'bg-gray-800' : 'bg-gray-100'}`}>
+                  <button
+                    onClick={() => setMode('custom')}
+                    className={`flex items-center space-x-2 px-3 py-1.5 rounded-md text-sm font-semibold transition-all ${mode === 'custom' ? (isDark ? 'bg-gray-700 text-white shadow' : 'bg-white text-gray-900 shadow') : (isDark ? 'text-gray-400 hover:text-gray-200' : 'text-gray-500 hover:text-gray-700')}`}
+                  >
+                    <Terminal className="w-4 h-4" />
+                    <span>Custom Input</span>
+                  </button>
+                  <button
+                    onClick={() => setMode('tests')}
+                    className={`flex items-center space-x-2 px-3 py-1.5 rounded-md text-sm font-semibold transition-all ${mode === 'tests' ? (isDark ? 'bg-gray-700 text-white shadow' : 'bg-white text-gray-900 shadow') : (isDark ? 'text-gray-400 hover:text-gray-200' : 'text-gray-500 hover:text-gray-700')}`}
+                  >
+                    <FlaskConical className="w-4 h-4" />
+                    <span>Test Cases</span>
+                  </button>
+                </div>
+              </div>
+
+              {mode === 'custom' ? (
+                <textarea
+                  className={`w-full flex-1 min-h-0 p-3 text-sm rounded-lg border resize-none ${isDark ? 'bg-gray-800 text-white border-gray-600 focus:border-purple-500 focus:ring-1 focus:ring-purple-500' : 'bg-gray-50 text-gray-900 border-gray-300 focus:border-purple-500 focus:ring-1 focus:ring-purple-500'} outline-none transition-all`}
+                  placeholder="Enter program input here..."
+                  value={input}
+                  onChange={(e) => setInput(e.target.value)}
+                />
+              ) : (
+                <div className="flex flex-col flex-1 min-h-0 space-y-3 overflow-y-auto pr-1 custom-scrollbar">
+                  {testCases.map((tc, idx) => (
+                    <div key={idx} className={`p-3 rounded-lg border ${isDark ? 'bg-gray-800 border-gray-600' : 'bg-gray-50 border-gray-200'}`}>
+                      <div className="flex justify-between items-center mb-2">
+                        <span className={`text-xs font-bold ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>TEST CASE {idx + 1}</span>
+                        {testCases.length > 1 && (
+                          <button
+                            onClick={() => setTestCases(testCases.filter((_, i) => i !== idx))}
+                            className="text-red-400 hover:text-red-500 transition-colors"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        )}
+                      </div>
+                      <div className="space-y-2">
+                        <textarea
+                          className={`w-full h-12 p-2 text-xs rounded border resize-none ${isDark ? 'bg-gray-900 text-white border-gray-700' : 'bg-white text-gray-900 border-gray-300'} outline-none`}
+                          placeholder="Input"
+                          value={tc.input}
+                          onChange={(e) => {
+                            const newTc = [...testCases];
+                            newTc[idx].input = e.target.value;
+                            setTestCases(newTc);
+                          }}
+                        />
+                        <textarea
+                          className={`w-full h-12 p-2 text-xs rounded border resize-none ${isDark ? 'bg-gray-900 text-white border-gray-700' : 'bg-white text-gray-900 border-gray-300'} outline-none`}
+                          placeholder="Expected Output"
+                          value={tc.expectedOutput}
+                          onChange={(e) => {
+                            const newTc = [...testCases];
+                            newTc[idx].expectedOutput = e.target.value;
+                            setTestCases(newTc);
+                          }}
+                        />
+                      </div>
+                    </div>
+                  ))}
+                  <div className="flex space-x-2">
+                    <button
+                      onClick={() => setTestCases([...testCases, { input: '', expectedOutput: '' }])}
+                      className={`flex-1 flex items-center justify-center space-x-1 py-2 rounded-lg border border-dashed transition-colors ${isDark ? 'border-gray-600 text-gray-400 hover:text-white hover:border-gray-500 hover:bg-gray-800' : 'border-gray-300 text-gray-500 hover:text-gray-800 hover:border-gray-400 hover:bg-gray-100'}`}
+                    >
+                      <Plus className="w-4 h-4" />
+                      <span className="text-sm font-semibold">Add Test Case</span>
+                    </button>
+                    <button
+                      onClick={() => setShowBulkModal(true)}
+                      className={`flex-1 flex items-center justify-center space-x-1 py-2 rounded-lg border border-dashed transition-colors ${isDark ? 'border-gray-600 text-gray-400 hover:text-white hover:border-gray-500 hover:bg-gray-800' : 'border-gray-300 text-gray-500 hover:text-gray-800 hover:border-gray-400 hover:bg-gray-100'}`}
+                    >
+                      <Plus className="w-4 h-4" />
+                      <span className="text-sm font-semibold">Bulk Add</span>
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* BOTTOM BOX: Output / Analysis */}
+            <div className={`flex-[6] flex flex-col min-h-0 rounded-xl shadow-lg border ${isDark ? 'bg-gray-900/80 border-gray-700' : 'bg-white/90 border-gray-200'}`}>
               <div className={`flex border-b ${isDark ? 'border-gray-700' : 'border-gray-200'}`}>
                 {[
                   { id: 'output', label: 'Output', icon: Terminal },
@@ -662,27 +728,42 @@ function SimpleCompiler() {
                     
                     {mode === 'tests' && testResults && (
                       <div className="space-y-3">
-                        {testResults.map((res, idx) => (
-                          <div key={idx} className={`p-3 rounded-lg border-l-4 ${res.passed ? (isDark ? 'bg-green-900/20 border-green-500' : 'bg-green-50 border-green-500') : (isDark ? 'bg-red-900/20 border-red-500' : 'bg-red-50 border-red-500')}`}>
-                            <div className="flex items-center justify-between mb-2">
-                              <h4 className={`font-bold text-sm ${res.passed ? 'text-green-500' : 'text-red-500'}`}>Test Case {idx + 1}: {res.passed ? 'PASSED' : 'FAILED'}</h4>
-                            </div>
-                            {res.error ? (
-                               <pre className={`text-sm whitespace-pre-wrap font-mono ${isDark ? 'text-red-400' : 'text-red-700'}`}>{res.error}</pre>
-                            ) : (
-                               <div className="grid grid-cols-2 gap-4">
-                                  <div>
-                                    <span className={`text-xs font-semibold ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>Your Output:</span>
-                                    <pre className={`mt-1 text-xs whitespace-pre-wrap font-mono ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>{res.actualOutput || ' '}</pre>
-                                  </div>
-                                  <div>
-                                    <span className={`text-xs font-semibold ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>Expected:</span>
-                                    <pre className={`mt-1 text-xs whitespace-pre-wrap font-mono ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>{res.expectedOutput || ' '}</pre>
-                                  </div>
-                               </div>
-                            )}
+                        {testResults.every(res => res.passed) ? (
+                          <div className={`p-4 text-center rounded-lg border-l-4 ${isDark ? 'bg-green-900/20 border-green-500' : 'bg-green-50 border-green-500'}`}>
+                            <div className="flex justify-center mb-2"><Check className="w-10 h-10 text-green-500" /></div>
+                            <h3 className="text-lg font-bold text-green-500">All {testResults.length} Test Cases Passed!</h3>
+                            <p className={`text-sm mt-1 ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>Great job, your code is working perfectly.</p>
                           </div>
-                        ))}
+                        ) : (
+                          <>
+                            <div className={`p-3 rounded-lg border-l-4 ${isDark ? 'bg-red-900/20 border-red-500' : 'bg-red-50 border-red-500'}`}>
+                                <h3 className="font-bold text-red-500 text-sm">
+                                  {testResults.filter(r => !r.passed).length} out of {testResults.length} test cases failed
+                                </h3>
+                            </div>
+                            {testResults.map((res, idx) => !res.passed && (
+                              <div key={idx} className={`p-3 rounded-lg border-l-4 ${isDark ? 'bg-red-900/20 border-red-500' : 'bg-red-50 border-red-500'}`}>
+                                <div className="flex items-center justify-between mb-2">
+                                  <h4 className="font-bold text-sm text-red-500">Test Case {idx + 1}: FAILED</h4>
+                                </div>
+                                {res.error ? (
+                                   <pre className={`text-sm whitespace-pre-wrap font-mono ${isDark ? 'text-red-400' : 'text-red-700'}`}>{res.error}</pre>
+                                ) : (
+                                   <div className="grid grid-cols-2 gap-4">
+                                      <div>
+                                        <span className={`text-xs font-semibold ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>Your Output:</span>
+                                        <pre className={`mt-1 text-xs whitespace-pre-wrap font-mono ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>{res.actualOutput || ' '}</pre>
+                                      </div>
+                                      <div>
+                                        <span className={`text-xs font-semibold ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>Expected:</span>
+                                        <pre className={`mt-1 text-xs whitespace-pre-wrap font-mono ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>{res.expectedOutput || ' '}</pre>
+                                      </div>
+                                   </div>
+                                )}
+                              </div>
+                            ))}
+                          </>
+                        )}
                       </div>
                     )}
 
@@ -698,14 +779,34 @@ function SimpleCompiler() {
                   <div>
                     {complexity && complexity !== "Analysis not requested" ? (
                       <div className={`p-3 rounded-lg border-l-4 ${isDark ? 'bg-indigo-900/20 border-indigo-500' : 'bg-indigo-50 border-indigo-500'}`}>
-                        <h4 className="font-bold text-sm text-indigo-500 mb-2">Complexity Analysis</h4>
+                        <div className="flex items-center justify-between mb-2">
+                          <h4 className="font-bold text-sm text-indigo-500">Complexity Analysis</h4>
+                          {isAnalyzing && <Activity className="w-4 h-4 text-indigo-500 animate-pulse" />}
+                        </div>
                         <pre className={`text-sm whitespace-pre-wrap font-mono ${isDark ? 'text-indigo-400' : 'text-indigo-700'}`}>{complexity}</pre>
                       </div>
                     ) : (
-                      <div className={`text-center py-8 ${isDark ? 'text-gray-500' : 'text-gray-400'}`}>
+                      <div className={`text-center py-8 flex flex-col items-center ${isDark ? 'text-gray-500' : 'text-gray-400'}`}>
                         <Cpu className="w-12 h-12 mx-auto mb-3 opacity-50" />
-                        <p className="font-medium">No analysis available</p>
-                        <p className="text-sm">{complexity === "Analysis not requested" ? "Enable 'Analyze Complexity' and run again" : "Run your code to get analysis"}</p>
+                        <p className="font-medium mb-1">No analysis available</p>
+                        <p className="text-sm mb-4">Click below to analyze time & space complexity for this code</p>
+                        <button 
+                          onClick={handleManualAnalyze} 
+                          disabled={isAnalyzing}
+                          className={`px-4 py-2 rounded-lg font-semibold text-sm transition-all shadow flex items-center space-x-2 ${isDark ? 'bg-indigo-600 text-white hover:bg-indigo-500' : 'bg-indigo-600 text-white hover:bg-indigo-700'} ${isAnalyzing ? 'opacity-70 cursor-not-allowed' : ''}`}
+                        >
+                          {isAnalyzing ? (
+                            <>
+                              <Activity className="w-4 h-4 animate-spin" />
+                              <span>Analyzing...</span>
+                            </>
+                          ) : (
+                            <>
+                              <Cpu className="w-4 h-4" />
+                              <span>Check Time & Space Complexity</span>
+                            </>
+                          )}
+                        </button>
                       </div>
                     )}
                   </div>
@@ -715,7 +816,7 @@ function SimpleCompiler() {
                     {aiReview ? (
                       <div className="space-y-4">
                         {formatAiReview(aiReview)?.map((section, index) => (
-                          <div key={index} className={`p-4 rounded-lg ${isDark ? 'bg-gray-800/60' : 'bg-gray-50/90'}`}>
+                          <div key={index} className="py-1">
                             <div className="space-y-3">
                               {(() => {
                                 let lastIndex = 0;
@@ -760,7 +861,48 @@ function SimpleCompiler() {
               </div>
             </div>
           </aside>
-        </main>
+        
+
+          {/* BULK ADD MODAL */}
+          {showBulkModal && (
+            <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
+              <div className={`w-full max-w-2xl flex flex-col rounded-xl shadow-2xl ${isDark ? 'bg-gray-800 border border-gray-700' : 'bg-white border border-gray-200'}`}>
+                <div className={`p-4 border-b flex justify-between items-center ${isDark ? 'border-gray-700' : 'border-gray-200'}`}>
+                  <h3 className={`text-lg font-bold ${isDark ? 'text-white' : 'text-gray-900'}`}>Bulk Import Test Cases</h3>
+                  <button onClick={() => setShowBulkModal(false)} className={`p-1 rounded-md ${isDark ? 'hover:bg-gray-700 text-gray-400' : 'hover:bg-gray-100 text-gray-500'}`}>
+                    <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
+                  </button>
+                </div>
+                <div className="p-4 flex flex-col space-y-4">
+                  <div className={`text-sm p-3 rounded-lg ${isDark ? 'bg-blue-900/20 text-blue-300' : 'bg-blue-50 text-blue-700'}`}>
+                    <strong>Format Instructions:</strong><br/>
+                    Use <code>---</code> to separate Input and Expected Output.<br/>
+                    Use <code>===</code> to separate different Test Cases.<br/><br/>
+                    <em>Example:</em><br/>
+                    Input 1<br/>
+                    ---<br/>
+                    Output 1<br/>
+                    ===<br/>
+                    Input 2<br/>
+                    ---<br/>
+                    Output 2
+                  </div>
+                  <textarea
+                    className={`w-full h-64 p-3 font-mono text-sm rounded-lg border resize-none outline-none ${isDark ? 'bg-gray-900 text-gray-300 border-gray-700 focus:border-purple-500' : 'bg-gray-50 text-gray-800 border-gray-300 focus:border-purple-500'}`}
+                    placeholder="Paste bulk test cases here..."
+                    value={bulkText}
+                    onChange={(e) => setBulkText(e.target.value)}
+                  />
+                </div>
+                <div className={`p-4 border-t flex justify-end space-x-3 ${isDark ? 'border-gray-700 bg-gray-900/50' : 'border-gray-200 bg-gray-50'} rounded-b-xl`}>
+                  <button onClick={() => setShowBulkModal(false)} className={`px-4 py-2 rounded-lg font-semibold ${isDark ? 'bg-gray-700 text-white hover:bg-gray-600' : 'bg-gray-200 text-gray-800 hover:bg-gray-300'}`}>Cancel</button>
+                  <button onClick={handleBulkImport} className="px-4 py-2 rounded-lg font-semibold bg-purple-600 text-white hover:bg-purple-700">Import</button>
+                </div>
+              </div>
+            </div>
+          )}
+
+</main>
       </div>
     </div>
   );
