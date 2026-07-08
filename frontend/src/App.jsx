@@ -166,7 +166,7 @@ function SimpleCompiler() {
   const [showBulkModal, setShowBulkModal] = useState(false);
   const [bulkText, setBulkText] = useState('');
   const [serverStatus, setServerStatus] = useState('waking'); // 'waking', 'online', 'error'
-  
+
   const [mode, setMode] = useState('custom'); // 'custom' or 'tests'
   const [testCases, setTestCases] = useState([{ input: '', expectedOutput: '' }]);
   const [testResults, setTestResults] = useState(null);
@@ -215,10 +215,10 @@ function SimpleCompiler() {
 
   const handleBulkImport = () => {
     if (!bulkText.trim()) return;
-    
+
     const cases = bulkText.split('===').map(tc => tc.trim()).filter(tc => tc);
     const newTestCases = [];
-    
+
     cases.forEach(tc => {
       const parts = tc.split('---');
       if (parts.length >= 1) {
@@ -228,7 +228,7 @@ function SimpleCompiler() {
         });
       }
     });
-    
+
     if (newTestCases.length > 0) {
       setTestCases(newTestCases);
     }
@@ -269,7 +269,7 @@ function SimpleCompiler() {
     setExecutionTime(null);
     setTestResults(null);
     setActiveTab('output');
-    
+
     if (analyzeComplexity) {
       setIsAnalyzing(true);
       setComplexity('Analyzing in background...');
@@ -277,14 +277,14 @@ function SimpleCompiler() {
 
     try {
       const startTime = Date.now();
-      
+
       // 1. Execute Code
-      const payload = mode === 'custom' 
-        ? { language, code, input } 
+      const payload = mode === 'custom'
+        ? { language, code, input }
         : { language, code, testCases };
-        
+
       const endpoint = mode === 'custom' ? '/run' : '/run-tests';
-      
+
       const runPromise = fetch(`${API_URL}${endpoint}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -476,7 +476,7 @@ function SimpleCompiler() {
               ? 'bg-gray-900/80 border-purple-500/30 shadow-purple-500/20'
               : 'bg-white/90 border-gray-200 shadow-gray-300/30'
               }`}>
-              
+
               <div className="flex flex-col xl:flex-row justify-between items-start xl:items-center p-2 sm:p-4 border-b flex-shrink-0 gap-3 bg-opacity-50">
                 <div className="flex items-center space-x-3">
                   <div className={`px-3 py-1.5 rounded-full text-sm font-semibold bg-gradient-to-r ${currentLang.color} text-white`}>
@@ -570,16 +570,16 @@ function SimpleCompiler() {
                 />
               </div>
 
-              {/* ACTION FOOTER */}
-              <div className={`p-3 border-t flex flex-col sm:flex-row items-center justify-end gap-3 ${isDark ? 'border-gray-700 bg-gray-900/50' : 'border-gray-200 bg-gray-50'}`}>
-                <div className="flex items-center space-x-3 w-full sm:w-auto">
+              {/* ACTION FOOTER (Desktop Only >= 1024px) */}
+              <div className={`p-3 border-t hidden lg:flex flex-row items-center justify-end gap-3 flex-shrink-0 ${isDark ? 'border-gray-700 bg-gray-900/50' : 'border-gray-200 bg-gray-50'}`}>
+                <div className="flex items-center space-x-3 w-auto">
                   <button
                     onClick={() => {
-                       if (activeTab === 'custom' || activeTab === 'tests') setActiveTab('output');
-                       handleSubmit();
+                      if (activeTab === 'custom' || activeTab === 'tests') setActiveTab('output');
+                      handleSubmit();
                     }}
                     disabled={isRunning}
-                    className={`flex-1 sm:flex-none flex items-center justify-center cursor-pointer space-x-2 py-2 px-6 rounded-lg font-bold text-white transition-all transform hover:scale-105 ${isRunning ? 'bg-gray-500 cursor-not-allowed scale-100' : 'bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 shadow-md shadow-purple-500/25'}`}
+                    className={`flex-none flex items-center justify-center cursor-pointer space-x-2 py-2 px-6 rounded-lg font-bold text-white transition-all transform hover:scale-105 ${isRunning ? 'bg-gray-500 cursor-not-allowed scale-100' : 'bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 shadow-md shadow-purple-500/25'}`}
                   >
                     {isRunning ? <><div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div><span>Running</span></>
                       : <><Play className="w-4 h-4" /><span>Run</span></>}
@@ -587,17 +587,44 @@ function SimpleCompiler() {
 
                   <button
                     onClick={() => {
-                       setActiveTab('review');
-                       handleAiReview();
+                      setActiveTab('review');
+                      handleAiReview();
                     }}
                     disabled={isReviewing}
-                    className={`flex-1 sm:flex-none flex items-center justify-center cursor-pointer space-x-2 py-2 px-6 rounded-lg font-bold text-white transition-all transform hover:scale-105 ${isReviewing ? 'bg-gray-500 cursor-not-allowed scale-100' : 'bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 shadow-md shadow-emerald-500/25'}`}
+                    className={`flex-none flex items-center justify-center cursor-pointer space-x-2 py-2 px-6 rounded-lg font-bold text-white transition-all transform hover:scale-105 ${isReviewing ? 'bg-gray-500 cursor-not-allowed scale-100' : 'bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 shadow-md shadow-emerald-500/25'}`}
                   >
                     {isReviewing ? <><div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div><span>Reviewing</span></>
                       : <><Bot className="w-4 h-4" /><span>Review</span></>}
                   </button>
                 </div>
               </div>
+            </div>
+
+            {/* ACTION BUTTONS (Mobile/Tablet Only < 1024px - Moved outside to prevent flexbox clipping bugs) */}
+            <div className="flex lg:hidden items-center space-x-3 w-full mt-2 flex-shrink-0">
+              <button
+                onClick={() => {
+                  if (activeTab === 'custom' || activeTab === 'tests') setActiveTab('output');
+                  handleSubmit();
+                }}
+                disabled={isRunning}
+                className={`flex-1 flex items-center justify-center cursor-pointer space-x-2 py-3 px-4 sm:px-6 rounded-xl font-bold text-white transition-all transform hover:scale-[1.02] active:scale-95 ${isRunning ? 'bg-gray-500 cursor-not-allowed' : 'bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 shadow-lg shadow-purple-500/25'}`}
+              >
+                {isRunning ? <><div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div><span className="text-sm sm:text-base">Running...</span></>
+                  : <><Play className="w-5 h-5 fill-current" /><span className="text-sm sm:text-base">Run Code</span></>}
+              </button>
+
+              <button
+                onClick={() => {
+                  setActiveTab('review');
+                  handleAiReview();
+                }}
+                disabled={isReviewing}
+                className={`flex-1 flex items-center justify-center cursor-pointer space-x-2 py-3 px-4 sm:px-6 rounded-xl font-bold text-white transition-all transform hover:scale-[1.02] active:scale-95 ${isReviewing ? 'bg-gray-500 cursor-not-allowed' : 'bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 shadow-lg shadow-emerald-500/25'}`}
+              >
+                {isReviewing ? <><div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div><span className="text-sm sm:text-base">Reviewing...</span></>
+                  : <><Bot className="w-5 h-5" /><span className="text-sm sm:text-base">AI Review</span></>}
+              </button>
             </div>
           </section>
 
@@ -725,7 +752,7 @@ function SimpleCompiler() {
                         <pre className={`text-sm whitespace-pre-wrap font-mono ${output.startsWith("Error") ? (isDark ? 'text-red-400' : 'text-red-700') : (isDark ? 'text-green-400' : 'text-green-700')}`}>{output}</pre>
                       </div>
                     )}
-                    
+
                     {mode === 'tests' && testResults && (
                       <div className="space-y-3">
                         {testResults.every(res => res.passed) ? (
@@ -737,9 +764,9 @@ function SimpleCompiler() {
                         ) : (
                           <>
                             <div className={`p-3 rounded-lg border-l-4 ${isDark ? 'bg-red-900/20 border-red-500' : 'bg-red-50 border-red-500'}`}>
-                                <h3 className="font-bold text-red-500 text-sm">
-                                  {testResults.filter(r => !r.passed).length} out of {testResults.length} test cases failed
-                                </h3>
+                              <h3 className="font-bold text-red-500 text-sm">
+                                {testResults.filter(r => !r.passed).length} out of {testResults.length} test cases failed
+                              </h3>
                             </div>
                             {testResults.map((res, idx) => !res.passed && (
                               <div key={idx} className={`p-3 rounded-lg border-l-4 ${isDark ? 'bg-red-900/20 border-red-500' : 'bg-red-50 border-red-500'}`}>
@@ -747,18 +774,18 @@ function SimpleCompiler() {
                                   <h4 className="font-bold text-sm text-red-500">Test Case {idx + 1}: FAILED</h4>
                                 </div>
                                 {res.error ? (
-                                   <pre className={`text-sm whitespace-pre-wrap font-mono ${isDark ? 'text-red-400' : 'text-red-700'}`}>{res.error}</pre>
+                                  <pre className={`text-sm whitespace-pre-wrap font-mono ${isDark ? 'text-red-400' : 'text-red-700'}`}>{res.error}</pre>
                                 ) : (
-                                   <div className="grid grid-cols-2 gap-4">
-                                      <div>
-                                        <span className={`text-xs font-semibold ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>Your Output:</span>
-                                        <pre className={`mt-1 text-xs whitespace-pre-wrap font-mono ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>{res.actualOutput || ' '}</pre>
-                                      </div>
-                                      <div>
-                                        <span className={`text-xs font-semibold ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>Expected:</span>
-                                        <pre className={`mt-1 text-xs whitespace-pre-wrap font-mono ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>{res.expectedOutput || ' '}</pre>
-                                      </div>
-                                   </div>
+                                  <div className="grid grid-cols-2 gap-4">
+                                    <div>
+                                      <span className={`text-xs font-semibold ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>Your Output:</span>
+                                      <pre className={`mt-1 text-xs whitespace-pre-wrap font-mono ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>{res.actualOutput || ' '}</pre>
+                                    </div>
+                                    <div>
+                                      <span className={`text-xs font-semibold ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>Expected:</span>
+                                      <pre className={`mt-1 text-xs whitespace-pre-wrap font-mono ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>{res.expectedOutput || ' '}</pre>
+                                    </div>
+                                  </div>
                                 )}
                               </div>
                             ))}
@@ -790,8 +817,8 @@ function SimpleCompiler() {
                         <Cpu className="w-12 h-12 mx-auto mb-3 opacity-50" />
                         <p className="font-medium mb-1">No analysis available</p>
                         <p className="text-sm mb-4">Click below to analyze time & space complexity for this code</p>
-                        <button 
-                          onClick={handleManualAnalyze} 
+                        <button
+                          onClick={handleManualAnalyze}
                           disabled={isAnalyzing}
                           className={`px-4 py-2 rounded-lg font-semibold text-sm transition-all shadow flex items-center space-x-2 ${isDark ? 'bg-indigo-600 text-white hover:bg-indigo-500' : 'bg-indigo-600 text-white hover:bg-indigo-700'} ${isAnalyzing ? 'opacity-70 cursor-not-allowed' : ''}`}
                         >
@@ -861,7 +888,7 @@ function SimpleCompiler() {
               </div>
             </div>
           </aside>
-        
+
 
           {/* BULK ADD MODAL */}
           {showBulkModal && (
@@ -875,16 +902,16 @@ function SimpleCompiler() {
                 </div>
                 <div className="p-4 flex flex-col space-y-4">
                   <div className={`text-sm p-3 rounded-lg ${isDark ? 'bg-blue-900/20 text-blue-300' : 'bg-blue-50 text-blue-700'}`}>
-                    <strong>Format Instructions:</strong><br/>
-                    Use <code>---</code> to separate Input and Expected Output.<br/>
-                    Use <code>===</code> to separate different Test Cases.<br/><br/>
-                    <em>Example:</em><br/>
-                    Input 1<br/>
-                    ---<br/>
-                    Output 1<br/>
-                    ===<br/>
-                    Input 2<br/>
-                    ---<br/>
+                    <strong>Format Instructions:</strong><br />
+                    Use <code>---</code> to separate Input and Expected Output.<br />
+                    Use <code>===</code> to separate different Test Cases.<br /><br />
+                    <em>Example:</em><br />
+                    Input 1<br />
+                    ---<br />
+                    Output 1<br />
+                    ===<br />
+                    Input 2<br />
+                    ---<br />
                     Output 2
                   </div>
                   <textarea
@@ -901,8 +928,7 @@ function SimpleCompiler() {
               </div>
             </div>
           )}
-
-</main>
+        </main>
       </div>
     </div>
   );
