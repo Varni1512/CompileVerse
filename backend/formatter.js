@@ -6,15 +6,15 @@ const formatCode = (language, code) => {
     let args = [];
 
     if (language === "py" || language === "python") {
-      command = "black";
-      args = ["-q", "-"];
+      command = "npx";
+      args = ["black", "-q", "-"];
     } else if (language === "cpp" || language === "c") {
-      command = "clang-format";
+      command = "npx";
       const ext = language === "cpp" ? "cpp" : "c";
-      args = [`--assume-filename=main.${ext}`];
+      args = ["clang-format", `--assume-filename=main.${ext}`];
     } else if (language === "java") {
-      command = "clang-format";
-      args = ["--assume-filename=main.java"];
+      command = "npx";
+      args = ["clang-format", "--assume-filename=main.java"];
     } else {
       return reject({ error: "Unsupported language for backend formatting" });
     }
@@ -25,6 +25,10 @@ const formatCode = (language, code) => {
 
     process.stdout.on("data", (data) => (output += data.toString()));
     process.stderr.on("data", (data) => (runError += data.toString()));
+
+    process.on("error", (err) => {
+      reject({ error: `Formatter executable not found or failed to start: ${err.message}` });
+    });
 
     process.on("close", (exitCode) => {
       if (exitCode !== 0) {

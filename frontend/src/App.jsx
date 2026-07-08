@@ -147,7 +147,9 @@ const HighlightedCodeBlock = ({ code, lang, isDark }) => {
 };
 
 function SimpleCompiler() {
-  const [language, setLanguage] = useState('cpp');
+  const [language, setLanguage] = useState(() => {
+    return localStorage.getItem('selectedLanguage') || 'cpp';
+  });
   const [code, setCode] = useState('');
   const [output, setOutput] = useState('');
   const [input, setInput] = useState('');
@@ -159,6 +161,8 @@ function SimpleCompiler() {
   const [executionTime, setExecutionTime] = useState(null);
   const [complexity, setComplexity] = useState('');
   const [activeTab, setActiveTab] = useState('output');
+  const [analyzeComplexity, setAnalyzeComplexity] = useState(false);
+  const [serverStatus, setServerStatus] = useState('waking'); // 'waking', 'online', 'error'
   
   const [mode, setMode] = useState('custom'); // 'custom' or 'tests'
   const [testCases, setTestCases] = useState([{ input: '', expectedOutput: '' }]);
@@ -166,6 +170,20 @@ function SimpleCompiler() {
 
   const [editorTheme, setEditorTheme] = useState('vs-dark');
   const editorRef = useRef(null);
+
+  const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+
+  useEffect(() => {
+    const wakeUpServer = async () => {
+      try {
+        await fetch(API_URL);
+        setServerStatus('online');
+      } catch (err) {
+        setServerStatus('error');
+      }
+    };
+    wakeUpServer();
+  }, [API_URL]);
 
   useEffect(() => {
     const savedCode = localStorage.getItem(`code-${language}`);
@@ -181,6 +199,10 @@ function SimpleCompiler() {
       localStorage.setItem(`code-${language}`, code);
     }
   }, [code, language]);
+
+  useEffect(() => {
+    localStorage.setItem('selectedLanguage', language);
+  }, [language]);
 
   const handleEditorWillMount = (monaco) => {
     Object.keys(customThemes).forEach(themeName => {
@@ -214,8 +236,6 @@ function SimpleCompiler() {
 
   const isDark = theme === 'dark';
 
-  const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
-
   const handleSubmit = async () => {
     setIsRunning(true);
     setOutput('');
@@ -227,7 +247,7 @@ function SimpleCompiler() {
     try {
       const startTime = Date.now();
       if (mode === 'custom') {
-        const payload = { language, code, input };
+        const payload = { language, code, input, analyzeComplexity };
         const response = await fetch(`${API_URL}/run`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -245,7 +265,7 @@ function SimpleCompiler() {
           setOutput("Error: " + (data.error || 'Compilation failed'));
         }
       } else {
-        const payload = { language, code, testCases };
+        const payload = { language, code, testCases, analyzeComplexity };
         const response = await fetch(`${API_URL}/run-tests`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -327,12 +347,12 @@ function SimpleCompiler() {
   return (
     // **SCROLL FIX**: Changed `h-screen` `overflow-hidden` to `min-h-screen`
     // This allows the whole page to scroll if content overflows, especially on smaller screens.
-    <div className={`min-h-screen w-full transition-all duration-300 ${isDark
+    <div className={`h-screen w-full lg:overflow-hidden transition-all duration-300 ${isDark
       ? 'bg-gradient-to-br from-gray-900 via-purple-900/20 to-gray-900'
       : 'bg-gradient-to-br from-blue-50 via-purple-50/30 to-pink-50/20'
       }`}>
 
-      <div className="relative z-10 flex min-h-screen flex-col p-2 sm:p-4">
+      <div className="relative z-10 flex h-full flex-col p-2 sm:p-4">
         <header className="flex justify-between items-center mb-4 flex-shrink-0">
           <div className="flex items-center space-x-3">
             <div className="relative">
@@ -349,6 +369,26 @@ function SimpleCompiler() {
                   CompileVerse
                 </span>
               </h1>
+              <div className="flex items-center space-x-2 mt-1">
+                {serverStatus === 'waking' && (
+                  <span className={`text-xs px-2 py-0.5 rounded-full flex items-center ${isDark ? 'bg-yellow-900/50 text-yellow-400' : 'bg-yellow-100 text-yellow-700'}`}>
+                    <span className="inline-block w-2 h-2 mr-1.5 bg-yellow-400 rounded-full animate-pulse"></span>
+                    Waking up backend... (~50s on first load)
+                  </span>
+                )}
+                {serverStatus === 'online' && (
+                  <span className={`text-xs px-2 py-0.5 rounded-full flex items-center ${isDark ? 'bg-green-900/50 text-green-400' : 'bg-green-100 text-green-700'}`}>
+                    <span className="inline-block w-2 h-2 mr-1.5 bg-green-400 rounded-full"></span>
+                    Server Online
+                  </span>
+                )}
+                {serverStatus === 'error' && (
+                  <span className={`text-xs px-2 py-0.5 rounded-full flex items-center ${isDark ? 'bg-red-900/50 text-red-400' : 'bg-red-100 text-red-700'}`}>
+                    <span className="inline-block w-2 h-2 mr-1.5 bg-red-400 rounded-full"></span>
+                    Server Error
+                  </span>
+                )}
+              </div>
             </div>
           </div>
 
@@ -365,10 +405,10 @@ function SimpleCompiler() {
         </header>
 
         {/* **RESPONSIVE LAYOUT**: Uses flex-col on mobile and lg:flex-row for larger screens */}
-        <main className="flex-1 flex flex-col lg:flex-row gap-4 min-h-0">
+        <main className="flex-1 flex flex-col lg:flex-row gap-4 min-h-0 overflow-y-auto lg:overflow-hidden">
 
-          <section className="w-full lg:w-7/12 flex flex-col">
-            <div className={`h-full flex flex-col rounded-xl p-2 sm:p-4 shadow-lg border ${isDark
+          <section className="w-full lg:w-7/12 flex flex-col min-h-0">
+            <div className={`flex-1 min-h-0 flex flex-col rounded-xl p-2 sm:p-4 shadow-lg border ${isDark
               ? 'bg-gray-900/80 border-purple-500/30 shadow-purple-500/20'
               : 'bg-white/90 border-gray-200 shadow-gray-300/30'
               }`}>
@@ -445,7 +485,7 @@ function SimpleCompiler() {
                 </div>
               </div>
 
-              <div className={`rounded-lg overflow-hidden border h-96 md:h-[32rem] lg:flex-1 ${isDark ? 'border-gray-700' : 'border-gray-200'}`}>
+              <div className={`rounded-lg overflow-hidden border h-96 lg:h-auto lg:flex-1 min-h-0 ${isDark ? 'border-gray-700' : 'border-gray-200'}`}>
                 <Editor
                   height="100%"
                   language={currentLang.monaco}
@@ -469,7 +509,7 @@ function SimpleCompiler() {
             </div>
           </section>
 
-          <aside className="w-full lg:w-5/12 flex flex-col space-y-4">
+          <aside className="w-full lg:w-5/12 flex flex-col space-y-4 min-h-0">
             <div className={`rounded-xl p-4 shadow-lg border flex-shrink-0 ${isDark ? 'bg-gray-900/80 border-gray-700' : 'bg-white/90 border-gray-200'
               }`}>
               <div className="mb-4">
@@ -549,30 +589,41 @@ function SimpleCompiler() {
                 )}
               </div>
 
-              <div className="grid grid-cols-2 gap-3">
-                <button
-                  onClick={handleSubmit}
-                  disabled={isRunning}
-                  className={`flex items-center justify-center cursor-pointer space-x-2 py-3 px-4 rounded-lg font-bold text-white transition-all transform hover:scale-105 ${isRunning ? 'bg-gray-500 cursor-not-allowed scale-100' : 'bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 shadow-lg shadow-purple-500/25'
-                    }`}
-                >
-                  {isRunning ? <><div className="w-4 h-4 border-2  border-white border-t-transparent rounded-full animate-spin"></div><span>Running</span></>
-                    : <><Play className="w-4 h-4" /><span>Run</span></>}
-                </button>
+              <div className="flex flex-col space-y-3">
+                <label className={`flex items-center space-x-2 text-sm cursor-pointer ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>
+                  <input
+                    type="checkbox"
+                    checked={analyzeComplexity}
+                    onChange={(e) => setAnalyzeComplexity(e.target.checked)}
+                    className="w-4 h-4 rounded border-gray-300 text-purple-600 focus:ring-purple-500"
+                  />
+                  <span>Analyze Time & Space Complexity (Uses AI)</span>
+                </label>
+                <div className="grid grid-cols-2 gap-3">
+                  <button
+                    onClick={handleSubmit}
+                    disabled={isRunning}
+                    className={`flex items-center justify-center cursor-pointer space-x-2 py-3 px-4 rounded-lg font-bold text-white transition-all transform hover:scale-105 ${isRunning ? 'bg-gray-500 cursor-not-allowed scale-100' : 'bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 shadow-lg shadow-purple-500/25'
+                      }`}
+                  >
+                    {isRunning ? <><div className="w-4 h-4 border-2  border-white border-t-transparent rounded-full animate-spin"></div><span>Running</span></>
+                      : <><Play className="w-4 h-4" /><span>Run</span></>}
+                  </button>
 
-                <button
-                  onClick={handleAiReview}
-                  disabled={isReviewing}
-                  className={`flex items-center justify-center cursor-pointer space-x-2 py-3 px-4 rounded-lg font-bold text-white transition-all transform hover:scale-105 ${isReviewing ? 'bg-gray-500 cursor-not-allowed scale-100' : 'bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 shadow-lg shadow-emerald-500/25'
-                    }`}
-                >
-                  {isReviewing ? <><div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div><span>Reviewing</span></>
-                    : <><Bot className="w-4 h-4" /><span>Review</span></>}
-                </button>
+                  <button
+                    onClick={handleAiReview}
+                    disabled={isReviewing}
+                    className={`flex items-center justify-center cursor-pointer space-x-2 py-3 px-4 rounded-lg font-bold text-white transition-all transform hover:scale-105 ${isReviewing ? 'bg-gray-500 cursor-not-allowed scale-100' : 'bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 shadow-lg shadow-emerald-500/25'
+                      }`}
+                  >
+                    {isReviewing ? <><div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div><span>Reviewing</span></>
+                      : <><Bot className="w-4 h-4" /><span>Review</span></>}
+                  </button>
+                </div>
               </div>
             </div>
 
-            <div className={`flex-1 flex flex-col rounded-xl shadow-lg border ${isDark ? 'bg-gray-900/80 border-gray-700' : 'bg-white/90 border-gray-200'
+            <div className={`flex-1 flex flex-col min-h-0 rounded-xl shadow-lg border ${isDark ? 'bg-gray-900/80 border-gray-700' : 'bg-white/90 border-gray-200'
               }`}>
               <div className={`flex border-b ${isDark ? 'border-gray-700' : 'border-gray-200'}`}>
                 {[
@@ -594,7 +645,7 @@ function SimpleCompiler() {
                 ))}
               </div>
 
-              <div className="p-2 sm:p-4 flex-1 overflow-y-auto min-h-[20rem]">
+              <div className="p-2 sm:p-4 flex-1 overflow-y-auto min-h-0">
                 {activeTab === 'output' && (
                   <div>
                     {mode === 'custom' && output && (
@@ -645,14 +696,16 @@ function SimpleCompiler() {
                 )}
                 {activeTab === 'complexity' && (
                   <div>
-                    {complexity ? (
+                    {complexity && complexity !== "Analysis not requested" ? (
                       <div className={`p-3 rounded-lg border-l-4 ${isDark ? 'bg-indigo-900/20 border-indigo-500' : 'bg-indigo-50 border-indigo-500'}`}>
                         <h4 className="font-bold text-sm text-indigo-500 mb-2">Complexity Analysis</h4>
                         <pre className={`text-sm whitespace-pre-wrap font-mono ${isDark ? 'text-indigo-400' : 'text-indigo-700'}`}>{complexity}</pre>
                       </div>
                     ) : (
                       <div className={`text-center py-8 ${isDark ? 'text-gray-500' : 'text-gray-400'}`}>
-                        <Cpu className="w-12 h-12 mx-auto mb-3 opacity-50" /><p className="font-medium">No analysis available</p><p className="text-sm">Run your code to get analysis</p>
+                        <Cpu className="w-12 h-12 mx-auto mb-3 opacity-50" />
+                        <p className="font-medium">No analysis available</p>
+                        <p className="text-sm">{complexity === "Analysis not requested" ? "Enable 'Analyze Complexity' and run again" : "Run your code to get analysis"}</p>
                       </div>
                     )}
                   </div>
