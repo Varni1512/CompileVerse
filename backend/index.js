@@ -1,5 +1,7 @@
 const express = require("express");
 const cors = require("cors");
+const helmet = require("helmet");
+const rateLimit = require("express-rate-limit");
 const { executeCode, executeTests } = require("./executeCode");
 const { aiCodeReview, getComplexityAnalysis, explainError } = require("./aiCodeReview");
 const { formatCode } = require("./formatter");
@@ -8,7 +10,29 @@ const app = express();
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
-app.use(cors());
+
+// 1. Helmet for HTTP header security
+app.use(helmet());
+
+// 2. Restrict CORS (Allow localhost and Vercel deployments)
+app.use(cors({
+  origin: function (origin, callback) {
+    if (!origin || origin.includes('localhost') || origin.includes('vercel.app') || origin.includes('aymahajan.in')) {
+      callback(null, true);
+    } else {
+      callback(new Error('Not allowed by CORS'));
+    }
+  },
+  methods: ['GET', 'POST']
+}));
+
+// 3. Rate Limiting to prevent DDOS and AI API abuse
+const limiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 100, // limit each IP to 100 requests per windowMs
+  message: { success: false, error: 'Too many requests from this IP, please try again after 15 minutes.' }
+});
+app.use(limiter);
 
 app.get("/", (req, res) => {
   res.json({ message: "Welcome to the Online Compiler Backend!" });
