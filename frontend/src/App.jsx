@@ -187,11 +187,13 @@ function SimpleCompiler() {
       if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
         try {
           await fetch('http://localhost:8000');
+          setActiveApiUrl('http://localhost:8000');
           setServerStatus('online');
+          return; // If local is running, stop here and use it
         } catch {
-          setServerStatus('error');
+          console.warn('Local backend is down. Falling back to cloud servers...');
+          // Don't return, let it fall through to the friend/render servers below
         }
-        return;
       }
 
       // 2. Production servers (Priority order: Friend Server -> Render)
