@@ -174,34 +174,57 @@ function SimpleCompiler() {
   const [editorTheme, setEditorTheme] = useState('vs-dark');
   const editorRef = useRef(null);
 
-  const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+  const [activeApiUrl, setActiveApiUrl] = useState(() => {
+    if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
+      return 'http://localhost:8000';
+    }
+    return import.meta.env.VITE_FRIEND_API_URL || import.meta.env.VITE_API_URL || 'https://compileverse-backend.onrender.com';
+  });
 
   useEffect(() => {
-    const wakeUpServer = async () => {
-      try {
-        await fetch(API_URL);
-        setServerStatus('online');
-      } catch (err) {
-        setServerStatus('error');
+    const findActiveServer = async () => {
+      // 1. Local environment check
+      if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
+        try {
+          await fetch('http://localhost:8000');
+          setServerStatus('online');
+        } catch {
+          setServerStatus('error');
+        }
+        return;
       }
+
+      // 2. Production servers (Priority order: Friend Server -> Render)
+      const servers = [
+        import.meta.env.VITE_FRIEND_API_URL, // e.g. 'http://your-friend-server-ip:8000'
+        import.meta.env.VITE_API_URL || 'https://compileverse-backend.onrender.com'
+      ].filter(Boolean); // Remove empty URLs
+
+      for (const url of servers) {
+        try {
+          // Quick ping to check if server is alive
+          const response = await fetch(url);
+          if (response.ok) {
+            setActiveApiUrl(url);
+            setServerStatus('online');
+            return;
+          }
+        } catch (err) {
+          console.warn(`Server ${url} is unreachable, trying next...`);
+        }
+      }
+      
+      // If all fail, keep the Render one as default fallback
+      setActiveApiUrl(servers[1] || servers[0]);
+      setServerStatus('error');
     };
-    wakeUpServer();
-  }, [API_URL]);
+
+    findActiveServer();
+  }, []);
 
   useEffect(() => {
-    const savedCode = localStorage.getItem(`code-${language}`);
-    if (savedCode) {
-      setCode(savedCode);
-    } else {
-      setCode(defaultTemplates[language]);
-    }
+    setCode(defaultTemplates[language]);
   }, [language]);
-
-  useEffect(() => {
-    if (code) {
-      localStorage.setItem(`code-${language}`, code);
-    }
-  }, [code, language]);
 
   useEffect(() => {
     localStorage.setItem('selectedLanguage', language);
@@ -239,7 +262,7 @@ function SimpleCompiler() {
   const handleFormat = async () => {
     if (['c', 'cpp', 'java', 'py'].includes(language)) {
       try {
-        const response = await fetch(`${API_URL}/format`, {
+        const response = await fetch(`${activeApiUrl}/format`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ language, code }),
@@ -285,7 +308,7 @@ function SimpleCompiler() {
 
       const endpoint = mode === 'custom' ? '/run' : '/run-tests';
 
-      const runPromise = fetch(`${API_URL}${endpoint}`, {
+      const runPromise = fetch(`${activeApiUrl}${endpoint}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
@@ -294,7 +317,7 @@ function SimpleCompiler() {
       // 2. Analyze Complexity (Background)
       let analyzePromise = null;
       if (analyzeComplexity) {
-        analyzePromise = fetch(`${API_URL}/analyze`, {
+        analyzePromise = fetch(`${activeApiUrl}/analyze`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ code }),
@@ -353,7 +376,7 @@ function SimpleCompiler() {
     setIsAnalyzing(true);
     setComplexity('Analyzing in background...');
     try {
-      const response = await fetch(`${API_URL}/analyze`, {
+      const response = await fetch(`${activeApiUrl}/analyze`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ code }),
@@ -372,7 +395,7 @@ function SimpleCompiler() {
     setAiReview('');
     setActiveTab('review');
     try {
-      const response = await fetch(`${API_URL}/ai-review`, {
+      const response = await fetch(`${activeApiUrl}/ai-review`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ code }),
