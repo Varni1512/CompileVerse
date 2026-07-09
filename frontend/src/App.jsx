@@ -841,43 +841,64 @@ function SimpleCompiler() {
                 {activeTab === 'review' && (
                   <div>
                     {aiReview ? (
-                      <div className="space-y-4">
-                        {formatAiReview(aiReview)?.map((section, index) => (
-                          <div key={index} className="py-1">
-                            <div className="space-y-3">
-                              {(() => {
-                                let lastIndex = 0;
-                                const elements = [];
+                      typeof aiReview === 'object' ? (
+                        <div className="space-y-4">
+                          {aiReview.optimizedCode === "ALREADY_OPTIMIZED" ? (
+                            <div className={`p-4 mt-3 rounded-xl border flex items-center space-x-3 ${isDark ? 'bg-green-900/20 border-green-800 text-green-400' : 'bg-green-50 border-green-200 text-green-700'}`}>
+                              <Check className="w-5 h-5 flex-shrink-0" />
+                              <p className="font-medium text-sm">Your code is already fully optimized! Great job! ✨</p>
+                            </div>
+                          ) : (
+                            <HighlightedCodeBlock code={aiReview.optimizedCode} lang={currentLang.monaco} isDark={isDark} />
+                          )}
+                          <div className={`p-4 rounded-xl border ${isDark ? 'bg-gray-800/50 border-gray-700' : 'bg-white border-gray-200'}`}>
+                            <p className={`font-semibold ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>
+                              Time Complexity: <span className="text-purple-500 font-normal">{aiReview.timeComplexity}</span>
+                            </p>
+                            <p className={`font-semibold mt-2 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>
+                              Space Complexity: <span className="text-pink-500 font-normal">{aiReview.spaceComplexity}</span>
+                            </p>
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="space-y-4">
+                          {formatAiReview(aiReview)?.map((section, index) => (
+                            <div key={index} className="py-1">
+                              <div className="space-y-3">
+                                {(() => {
+                                  let lastIndex = 0;
+                                  const elements = [];
 
-                                section.codeBlocks.forEach((codeBlock, blockIndex) => {
-                                  const textBefore = section.content.slice(lastIndex, codeBlock.startIndex);
-                                  if (textBefore.trim()) {
+                                  section.codeBlocks.forEach((codeBlock, blockIndex) => {
+                                    const textBefore = section.content.slice(lastIndex, codeBlock.startIndex);
+                                    if (textBefore.trim()) {
+                                      elements.push(
+                                        <div key={`text-${blockIndex}`} className={`text-sm leading-relaxed whitespace-pre-wrap ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>
+                                          {textBefore.trim()}
+                                        </div>
+                                      );
+                                    }
                                     elements.push(
-                                      <div key={`text-${blockIndex}`} className={`text-sm leading-relaxed whitespace-pre-wrap ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>
-                                        {textBefore.trim()}
+                                      <HighlightedCodeBlock key={`code-${blockIndex}`} code={codeBlock.code} lang={codeBlock.lang} isDark={isDark} />
+                                    );
+                                    lastIndex = codeBlock.endIndex;
+                                  });
+
+                                  const textAfter = section.content.slice(lastIndex);
+                                  if (textAfter.trim()) {
+                                    elements.push(
+                                      <div key="text-final" className={`text-sm leading-relaxed whitespace-pre-wrap ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>
+                                        {textAfter.trim()}
                                       </div>
                                     );
                                   }
-                                  elements.push(
-                                    <HighlightedCodeBlock key={`code-${blockIndex}`} code={codeBlock.code} lang={codeBlock.lang} isDark={isDark} />
-                                  );
-                                  lastIndex = codeBlock.endIndex;
-                                });
-
-                                const textAfter = section.content.slice(lastIndex);
-                                if (textAfter.trim()) {
-                                  elements.push(
-                                    <div key="text-final" className={`text-sm leading-relaxed whitespace-pre-wrap ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>
-                                      {textAfter.trim()}
-                                    </div>
-                                  );
-                                }
-                                return elements;
-                              })()}
+                                  return elements;
+                                })()}
+                              </div>
                             </div>
-                          </div>
-                        ))}
-                      </div>
+                          ))}
+                        </div>
+                      )
                     ) : (
                       <div className={`text-center py-8 ${isDark ? 'text-gray-500' : 'text-gray-400'}`}>
                         <Bot className="w-12 h-12 mx-auto mb-3 opacity-50" /><p className="font-medium">No AI review yet</p><p className="text-sm">Click "Review" for AI analysis</p>

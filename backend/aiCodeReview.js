@@ -12,16 +12,19 @@ const aiCodeReview = async (code) => {
                 role: "system",
                 content: "You are an expert code optimizer."
             },
-
             {
                 role: "user",
                 content: `Your task:
-1. Provide an optimized version of the following code.
-2. After the optimized code, output exactly TWO lines:
-Time Complexity: <big-O>
-Space Complexity: <big-O>
+1. Provide an optimized version of the following code. IF the code is already fully optimized and cannot be meaningfully improved, write exactly "ALREADY_OPTIMIZED" inside the code block.
+2. Provide the Time Complexity and Space Complexity.
 
-Return **nothing** else—no explanations, no bullet points.
+Format your response EXACTLY like this:
+
+\`\`\`
+[your optimized code here with preserved indentation and newlines, OR "ALREADY_OPTIMIZED"]
+\`\`\`
+TIME_COMPLEXITY: [your time complexity, e.g. O(n)]
+SPACE_COMPLEXITY: [your space complexity, e.g. O(1)]
 
 Here is the code:
 ${code}`
@@ -32,7 +35,27 @@ ${code}`
 
     const responseText = completion.choices[0]?.message?.content || "";
     console.log(responseText);
-    return responseText;
+    
+    // Parse the markdown response
+    const codeMatch = responseText.match(/```[\w]*\n([\s\S]*?)```/);
+    const tcMatch = responseText.match(/TIME_COMPLEXITY:\s*(.*)/);
+    const scMatch = responseText.match(/SPACE_COMPLEXITY:\s*(.*)/);
+
+    let optimizedCode = codeMatch ? codeMatch[1].trim() : responseText.replace(/```[\s\S]*/, '').trim();
+
+    // If the LLM returned the exact same code (ignoring whitespace), it means no improvements were made.
+    if (
+        optimizedCode === "ALREADY_OPTIMIZED" || 
+        optimizedCode.replace(/\s+/g, '') === code.replace(/\s+/g, '')
+    ) {
+        optimizedCode = "ALREADY_OPTIMIZED";
+    }
+
+    return {
+        optimizedCode: optimizedCode,
+        timeComplexity: tcMatch ? tcMatch[1].trim() : "Unknown",
+        spaceComplexity: scMatch ? scMatch[1].trim() : "Unknown"
+    };
 };
 
 // New function for complexity analysis only
