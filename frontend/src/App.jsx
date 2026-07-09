@@ -178,7 +178,7 @@ function SimpleCompiler() {
     if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
       return 'http://localhost:8000';
     }
-    return import.meta.env.VITE_FRIEND_API_URL || import.meta.env.VITE_API_URL || 'https://compileverse-backend.onrender.com';
+    return import.meta.env.VITE_API_URL || 'https://compileverse-backend.onrender.com';
   });
 
   useEffect(() => {
@@ -196,28 +196,21 @@ function SimpleCompiler() {
         }
       }
 
-      // 2. Production servers (Priority order: Friend Server -> Render)
-      const servers = [
-        import.meta.env.VITE_FRIEND_API_URL, // e.g. 'http://your-friend-server-ip:8000'
-        import.meta.env.VITE_API_URL || 'https://compileverse-backend.onrender.com'
-      ].filter(Boolean); // Remove empty URLs
-
-      for (const url of servers) {
-        try {
-          // Quick ping to check if server is alive
-          const response = await fetch(url);
-          if (response.ok) {
-            setActiveApiUrl(url);
-            setServerStatus('online');
-            return;
-          }
-        } catch (err) {
-          console.warn(`Server ${url} is unreachable, trying next...`);
+      // 2. Production server (Render)
+      const renderUrl = import.meta.env.VITE_API_URL || 'https://compileverse-backend.onrender.com';
+      
+      try {
+        const response = await fetch(renderUrl);
+        if (response.ok) {
+          setActiveApiUrl(renderUrl);
+          setServerStatus('online');
+          return;
         }
+      } catch (err) {
+        console.warn(`Render server is unreachable.`);
       }
       
-      // If all fail, keep the Render one as default fallback
-      setActiveApiUrl(servers[1] || servers[0]);
+      setActiveApiUrl(renderUrl);
       setServerStatus('error');
     };
 
