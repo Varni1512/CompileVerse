@@ -9,6 +9,10 @@ const runExecutable = (executableCommand, args, input, options = {}) => {
     const run = spawn(executableCommand, args, options);
     let output = "", runError = "";
 
+    run.on("error", (err) => {
+      reject({ error: `Failed to start execution: ${err.message}` });
+    });
+
     // 5 seconds timeout to kill infinite loops
     const timeout = setTimeout(() => {
       run.kill("SIGKILL");
@@ -70,6 +74,7 @@ const executeTests = async (language, code, testCases) => {
     return new Promise((resolve, reject) => {
       const compile = spawn(compiler, ["-x", langIdentifier, "-o", executablePath, "-"]);
       let compileError = "";
+      compile.on("error", (err) => reject({ error: `Compiler error: ${err.message}` }));
       compile.stderr.on("data", (data) => (compileError += data.toString()));
       compile.on("close", async (codeStatus) => {
         if (codeStatus !== 0) return reject({ error: compileError || "Compilation failed" });
@@ -101,6 +106,10 @@ const executeTests = async (language, code, testCases) => {
       return new Promise((resolve, reject) => {
         const compile = spawn("javac", [filePath]);
         let compileError = "";
+        compile.on("error", async (err) => {
+          await fs.rm(tempDir, { recursive: true, force: true }).catch(() => {});
+          reject({ error: `Java compiler error: ${err.message}` });
+        });
         compile.stderr.on("data", (data) => (compileError += data.toString()));
         compile.on("close", async (codeStatus) => {
           if (codeStatus !== 0) {
