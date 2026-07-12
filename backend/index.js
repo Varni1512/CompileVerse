@@ -8,6 +8,10 @@ const { formatCode } = require("./formatter");
 
 const app = express();
 
+// Trust the first proxy in front of the application (e.g. Nginx, Render, Heroku)
+// This is required for express-rate-limit to work correctly when deployed
+app.set("trust proxy", 1);
+
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
