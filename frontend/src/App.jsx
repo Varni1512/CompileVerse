@@ -178,7 +178,8 @@ function SimpleCompiler() {
     if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
       return 'http://localhost:8000';
     }
-    return import.meta.env.VITE_API_URL || 'https://compileverse-backend.onrender.com';
+    const url = import.meta.env.VITE_FRIEND_API_URL || import.meta.env.VITE_API_URL || 'https://compileverse-backend.onrender.com';
+    return url.replace(/\/+$/, '');
   });
 
   useEffect(() => {
@@ -186,23 +187,46 @@ function SimpleCompiler() {
       // 1. Local environment check
       if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
         try {
-          await fetch('http://localhost:8000');
+          const controller = new AbortController();
+          const timeoutId = setTimeout(() => controller.abort(), 2000);
+          await fetch('http://localhost:8000', { signal: controller.signal });
+          clearTimeout(timeoutId);
+
           setActiveApiUrl('http://localhost:8000');
           setServerStatus('online');
           return; // If local is running, stop here and use it
         } catch {
-          console.warn('Local backend is down. Falling back to cloud servers...');
-          // Don't return, let it fall through to the friend/render servers below
+          console.warn('Local backend is down. Falling back to other servers...');
         }
       }
 
-      // 2. Production server (Render)
+      // 2. Friend's server check (if configured in .env as VITE_FRIEND_API_URL)
+      const friendUrl = import.meta.env.VITE_FRIEND_API_URL;
+      if (friendUrl) {
+        try {
+          const controller = new AbortController();
+          const timeoutId = setTimeout(() => controller.abort(), 2000);
+          await fetch(friendUrl, { signal: controller.signal });
+          clearTimeout(timeoutId);
+
+          setActiveApiUrl(friendUrl.replace(/\/+$/, ''));
+          setServerStatus('online');
+          return;
+        } catch {
+          console.warn('Friend server is unreachable. Falling back to Render...');
+        }
+      }
+
+      // 3. Production server (Render)
       const renderUrl = import.meta.env.VITE_API_URL || 'https://compileverse-backend.onrender.com';
-      
       try {
-        const response = await fetch(renderUrl);
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 5000);
+        const response = await fetch(renderUrl, { signal: controller.signal });
+        clearTimeout(timeoutId);
+        
         if (response.ok) {
-          setActiveApiUrl(renderUrl);
+          setActiveApiUrl(renderUrl.replace(/\/+$/, ''));
           setServerStatus('online');
           return;
         }
@@ -210,7 +234,7 @@ function SimpleCompiler() {
         console.warn(`Render server is unreachable.`);
       }
       
-      setActiveApiUrl(renderUrl);
+      setActiveApiUrl(renderUrl.replace(/\/+$/, ''));
       setServerStatus('error');
     };
 
