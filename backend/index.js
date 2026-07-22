@@ -18,10 +18,10 @@ app.use(express.urlencoded({ extended: true }));
 // 1. Helmet for HTTP header security
 app.use(helmet());
 
-// 2. Restrict CORS (Allow localhost and Vercel deployments)
+// 2. Restrict CORS (Allow localhost, Vercel, and custom domains)
 app.use(cors({
   origin: function (origin, callback) {
-    if (!origin || origin.includes('localhost') || origin.includes('vercel.app') || origin.includes('aymahajan.in')) {
+    if (!origin || origin.includes('localhost') || origin.includes('vercel.app') || origin.includes('aymahajan.in') || origin.includes('codewithvarni.app')) {
       callback(null, true);
     } else {
       callback(new Error('Not allowed by CORS'));
