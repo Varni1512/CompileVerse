@@ -67,33 +67,46 @@ const executeTests = async (language, code, testCases) => {
     }
   } else if (language === "cpp" || language === "c") {
     const compiler = language === "cpp" ? "g++" : "gcc";
-    const langIdentifier = language === "cpp" ? "c++" : "c";
-    const executableName = uuid();
-    const executablePath = path.join(os.tmpdir(), executableName);
+    const extension = language === "cpp" ? "cpp" : "c";
+    const tempDir = path.join(os.tmpdir(), uuid());
+    const filePath = path.join(tempDir, `main.${extension}`);
+    const executablePath = path.join(tempDir, os.platform() === 'win32' ? "a.exe" : "a.out");
 
-    return new Promise((resolve, reject) => {
-      const compile = spawn(compiler, ["-x", langIdentifier, "-o", executablePath, "-"]);
-      let compileError = "";
-      compile.on("error", (err) => reject({ error: `Compiler error: ${err.message}` }));
-      compile.stderr.on("data", (data) => (compileError += data.toString()));
-      compile.on("close", async (codeStatus) => {
-        if (codeStatus !== 0) return reject({ error: compileError || "Compilation failed" });
+    try {
+      await fs.mkdir(tempDir, { recursive: true });
+      await fs.writeFile(filePath, code);
 
-        const results = [];
-        for (const input of testCases) {
-          try {
-            const output = await runExecutable(executablePath, [], input);
-            results.push({ success: true, output });
-          } catch (err) {
-            results.push({ success: false, error: err.error });
+      return new Promise((resolve, reject) => {
+        const compile = spawn(compiler, [filePath, "-o", executablePath]);
+        let compileError = "";
+        compile.on("error", async (err) => {
+          await fs.rm(tempDir, { recursive: true, force: true }).catch(() => {});
+          reject({ error: `Compiler error: ${err.message}` });
+        });
+        compile.stderr.on("data", (data) => (compileError += data.toString()));
+        compile.on("close", async (codeStatus) => {
+          if (codeStatus !== 0) {
+            await fs.rm(tempDir, { recursive: true, force: true }).catch(() => {});
+            return reject({ error: compileError || "Compilation failed" });
           }
-        }
-        await fs.unlink(executablePath).catch(() => {});
-        resolve(results);
+
+          const results = [];
+          for (const input of testCases) {
+            try {
+              const output = await runExecutable(executablePath, [], input);
+              results.push({ success: true, output });
+            } catch (err) {
+              results.push({ success: false, error: err.error });
+            }
+          }
+          await fs.rm(tempDir, { recursive: true, force: true }).catch(() => {});
+          resolve(results);
+        });
       });
-      compile.stdin.write(code);
-      compile.stdin.end();
-    });
+    } catch (e) {
+      await fs.rm(tempDir, { recursive: true, force: true }).catch(() => {});
+      throw { error: e.message };
+    }
   } else if (language === "java") {
     const className = "Main";
     const tempDir = path.join(os.tmpdir(), uuid());
