@@ -4,6 +4,8 @@ const os = require("os");
 const fs = require("fs").promises;
 const { v4: uuid } = require("uuid");
 
+const baseTempDir = path.join(__dirname, "temp");
+
 const runExecutable = (executableCommand, args, input, options = {}) => {
   return new Promise((resolve, reject) => {
     const run = spawn(executableCommand, args, options);
@@ -46,7 +48,7 @@ const executeTests = async (language, code, testCases) => {
   // We will return an array of outputs
 
   if (language === "py" || language === "python") {
-    const tempDir = path.join(os.tmpdir(), uuid());
+    const tempDir = path.join(baseTempDir, uuid());
     const filePath = path.join(tempDir, "main.py");
     try {
       await fs.mkdir(tempDir, { recursive: true });
@@ -68,7 +70,7 @@ const executeTests = async (language, code, testCases) => {
   } else if (language === "cpp" || language === "c") {
     const compiler = language === "cpp" ? "g++" : "gcc";
     const extension = language === "cpp" ? "cpp" : "c";
-    const tempDir = path.join(os.tmpdir(), uuid());
+    const tempDir = path.join(baseTempDir, uuid());
     const filePath = path.join(tempDir, `main.${extension}`);
     const executablePath = path.join(tempDir, os.platform() === 'win32' ? "a.exe" : "a.out");
 
@@ -109,7 +111,7 @@ const executeTests = async (language, code, testCases) => {
     }
   } else if (language === "java") {
     const className = "Main";
-    const tempDir = path.join(os.tmpdir(), uuid());
+    const tempDir = path.join(baseTempDir, uuid());
     const filePath = path.join(tempDir, `${className}.java`);
 
     try {
