@@ -51,10 +51,11 @@ app.post("/run", async (req, res) => {
 
   try {
     const output = await executeCode(language, code, input);
-    logUsage(req.ip, '/run', language);
+    logUsage(req.ip, '/run', language, 'success', req.headers['user-agent']);
     res.json({ output });
   } catch (err) {
     console.error("Execution Error:", err);
+    logUsage(req.ip, '/run', language, 'error', req.headers['user-agent']);
     res.status(500).json({ success: false, error: err.error || "Execution failed" });
   }
 });
@@ -70,7 +71,7 @@ app.post("/run-tests", async (req, res) => {
     const inputs = testCases.map(tc => tc.input);
     const results = await executeTests(language, code, inputs);
 
-    logUsage(req.ip, '/run-tests', language);
+    logUsage(req.ip, '/run-tests', language, 'success', req.headers['user-agent']);
 
     const formattedResults = results.map((result, index) => {
       if (!result.success) {
@@ -88,6 +89,7 @@ app.post("/run-tests", async (req, res) => {
     res.json({ results: formattedResults });
   } catch (err) {
     console.error("Execution Error:", err);
+    logUsage(req.ip, '/run-tests', language, 'error', req.headers['user-agent']);
     res.status(500).json({ success: false, error: err.error || "Execution failed" });
   }
 });
@@ -99,9 +101,11 @@ app.post("/analyze", async (req, res) => {
   }
   try {
     const complexity = await getComplexityAnalysis(code);
+    logUsage(req.ip, '/analyze', 'unknown', 'success', req.headers['user-agent']);
     res.json({ complexity });
   } catch (aiErr) {
     console.error("AI Complexity Analysis Error:", aiErr);
+    logUsage(req.ip, '/analyze', 'unknown', 'error', req.headers['user-agent']);
     if (aiErr.status === 429 || aiErr?.error?.error?.code === "rate_limit_exceeded") {
       res.json({ complexity: "AI Limit Reached. Please try again later." });
     } else {
@@ -117,8 +121,10 @@ app.post("/ai-review", async (req, res) => {
   }
   try {
     const reply = await aiChat(messages, code, language);
+    logUsage(req.ip, '/ai-review', language, 'success', req.headers['user-agent']);
     res.status(200).json({ reply });
   } catch (error) {
+    logUsage(req.ip, '/ai-review', language, 'error', req.headers['user-agent']);
     if (error.status === 429 || error?.error?.error?.code === "rate_limit_exceeded") {
       return res.status(429).json({ success: false, error: "AI API limit reached. Please wait a few minutes before trying again." });
     }
@@ -133,8 +139,10 @@ app.post("/explain-error", async (req, res) => {
   }
   try {
     const explanation = await explainError(errorMessage, code, language);
+    logUsage(req.ip, '/explain-error', language, 'success', req.headers['user-agent']);
     res.status(200).json({ success: true, explanation });
   } catch (error) {
+    logUsage(req.ip, '/explain-error', language, 'error', req.headers['user-agent']);
     if (error.status === 429 || error?.error?.error?.code === "rate_limit_exceeded") {
       return res.status(429).json({ success: false, error: "AI API limit reached. Please try again later." });
     }

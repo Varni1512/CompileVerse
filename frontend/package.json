@@ -21,6 +21,7 @@
     "react-dom": "^19.1.0",
     "react-markdown": "^10.1.0",
     "react-simple-code-editor": "^0.14.1",
+    "recharts": "^3.10.0",
     "tailwindcss": "^4.1.7"
   },
   "devDependencies": {

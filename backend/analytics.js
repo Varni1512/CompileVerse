@@ -1,6 +1,6 @@
 const fs = require('fs');
 const path = require('path');
-const geoip = require('geoip-lite');
+const UAParser = require('ua-parser-js');
 
 const STATS_FILE = path.join(__dirname, 'stats.json');
 
@@ -26,21 +26,24 @@ function saveStats(stats) {
   }
 }
 
-function logUsage(ip, endpoint, language) {
+function logUsage(ip, endpoint, language, status = 'success', userAgentString = '') {
   // Normalize local IPs
   let queryIp = ip;
   if (ip === '::1' || ip === '127.0.0.1' || ip === '::ffff:127.0.0.1') {
     queryIp = '127.0.0.1'; // Localhost
   }
 
-  const geo = geoip.lookup(queryIp);
-  
+  const parser = new UAParser(userAgentString);
+  const browser = parser.getBrowser();
+  const os = parser.getOS();
+
   const record = {
     ip: queryIp,
-    country: geo ? geo.country : 'Unknown',
-    city: geo ? geo.city : 'Unknown',
+    browser: browser.name || 'Unknown',
+    os: os.name || 'Unknown',
     endpoint,
-    language,
+    language: language || 'unknown',
+    status,
     timestamp: new Date().toISOString()
   };
 
