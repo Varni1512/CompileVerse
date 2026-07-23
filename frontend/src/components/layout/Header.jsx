@@ -10,7 +10,7 @@ export const Header = ({ serverStatus, theme, setTheme, isDark }) => {
         </div>
         <div>
           <h1 className={`text-2xl font-bold ${isDark ? 'text-white' : 'text-gray-900'}`}>
-            <span className="bg-gradient-to-r from-blue-400 to-cyan-400 bg-clip-text text-transparent">
+            <span className="bg-blue-600 bg-clip-text text-transparent">
               CompileVerse
             </span>
           </h1>
@@ -21,12 +21,7 @@ export const Header = ({ serverStatus, theme, setTheme, isDark }) => {
                 Waking up backend... (~50s on first load)
               </span>
             )}
-            {serverStatus === 'online' && (
-              <span className={`text-xs px-2 py-0.5 rounded-full flex items-center ${isDark ? 'bg-green-900/50 text-green-400' : 'bg-green-100 text-green-700'}`}>
-                <span className="inline-block w-2 h-2 mr-1.5 bg-green-400 rounded-full"></span>
-                Server Online
-              </span>
-            )}
+
             {serverStatus === 'error' && (
               <span className={`text-xs px-2 py-0.5 rounded-full flex items-center ${isDark ? 'bg-red-900/50 text-red-400' : 'bg-red-100 text-red-700'}`}>
                 <span className="inline-block w-2 h-2 mr-1.5 bg-red-400 rounded-full"></span>
