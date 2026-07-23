@@ -29,12 +29,6 @@ int main() {
     cout << "Hello, World!" << endl;
     return 0;
 }`,
-  c: `#include <stdio.h>
-
-int main() {
-    printf("Hello, World!\\n");
-    return 0;
-}`,
   java: `public class Main {
     public static void main(String[] args) {
         System.out.println("Hello, World!");
@@ -45,7 +39,7 @@ int main() {
 
 const languageConfig = {
   cpp: { name: 'C++', color: 'from-blue-500 to-cyan-500', monaco: 'cpp', extension: 'cpp' },
-  c: { name: 'C', color: 'from-gray-500 to-slate-600', monaco: 'c', extension: 'c' },
+
   java: { name: 'Java', color: 'from-orange-500 to-red-500', monaco: 'java', extension: 'java' },
   py: { name: 'Python', color: 'from-green-500 to-emerald-500', monaco: 'python', extension: 'py' }
 };
@@ -278,29 +272,7 @@ function SimpleCompiler() {
     setBulkText('');
   };
 
-  const handleFormat = async () => {
-    if (['c', 'cpp', 'java', 'py'].includes(language)) {
-      try {
-        const response = await fetch(`${activeApiUrl}/format`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ language, code }),
-        });
-        const data = await response.json();
-        if (response.ok && data.formattedCode) {
-          setCode(data.formattedCode);
-        } else {
-          if (editorRef.current) editorRef.current.getAction('editor.action.formatDocument').run();
-        }
-      } catch (err) {
-        if (editorRef.current) editorRef.current.getAction('editor.action.formatDocument').run();
-      }
-    } else {
-      if (editorRef.current) {
-        editorRef.current.getAction('editor.action.formatDocument').run();
-      }
-    }
-  };
+
 
   const isDark = theme === 'dark';
 
@@ -563,13 +535,7 @@ function SimpleCompiler() {
                     <option value="light">Light</option>
                   </select>
 
-                  <button
-                    onClick={handleFormat}
-                    title="Format code"
-                    className={`p-1.5 rounded-lg cursor-pointer transition-all ${isDark ? 'bg-gray-800 hover:bg-gray-700 text-gray-300' : 'bg-gray-100 hover:bg-gray-200 text-gray-600'}`}
-                  >
-                    <AlignLeft className="w-4 h-4" />
-                  </button>
+
 
                   <button
                     onClick={handleDownload}

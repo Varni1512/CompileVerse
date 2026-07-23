@@ -4,7 +4,6 @@ const helmet = require("helmet");
 const rateLimit = require("express-rate-limit");
 const { executeCode, executeTests } = require("./executeCode");
 const { aiCodeReview, getComplexityAnalysis, explainError } = require("./aiCodeReview");
-const { formatCode } = require("./formatter");
 
 const app = express();
 
@@ -139,19 +138,7 @@ app.post("/explain-error", async (req, res) => {
   }
 });
 
-app.post("/format", async (req, res) => {
-  const { language, code } = req.body;
-  if (!code) {
-    return res.status(400).json({ success: false, error: "Code is required." });
-  }
-  try {
-    const formattedCode = await formatCode(language, code);
-    res.json({ formattedCode });
-  } catch (error) {
-    console.error("Format Error:", error);
-    res.status(500).json({ success: false, error: error.error || "Formatting failed" });
-  }
-});
+
 
 const PORT = process.env.PORT || 8000;
 app.listen(PORT, () => {

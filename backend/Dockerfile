@@ -6,7 +6,7 @@ FROM node:20-slim
 # build-essential: Installs gcc (for C) and g++ (for C++).
 # openjdk-17-jdk: Installs the Java Development Kit (JDK).
 # python3: Installs the Python 3 runtime.
-RUN apt-get update && apt-get install -y build-essential openjdk-17-jdk python3 clang-format black && \
+RUN apt-get update && apt-get install -y build-essential openjdk-17-jdk python3 && \
     # Clean up the apt cache to keep the image size down
     rm -rf /var/lib/apt/lists/*
 

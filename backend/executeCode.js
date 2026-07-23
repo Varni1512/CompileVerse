@@ -67,9 +67,9 @@ const executeTests = async (language, code, testCases) => {
     } finally {
       await fs.rm(tempDir, { recursive: true, force: true }).catch(() => {});
     }
-  } else if (language === "cpp" || language === "c") {
-    const compiler = language === "cpp" ? "g++" : "gcc";
-    const extension = language === "cpp" ? "cpp" : "c";
+  } else if (language === "cpp") {
+    const compiler = "g++";
+    const extension = "cpp";
     const tempDir = path.join(baseTempDir, uuid());
     const filePath = path.join(tempDir, `main.${extension}`);
     const executablePath = path.join(tempDir, os.platform() === 'win32' ? "a.exe" : "a.out");
