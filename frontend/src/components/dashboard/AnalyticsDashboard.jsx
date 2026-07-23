@@ -27,7 +27,7 @@ export const AnalyticsDashboard = ({ isDark, activeApiUrl }) => {
       }
     };
     fetchStats();
-    
+
     // Auto refresh every 10 seconds
     const interval = setInterval(fetchStats, 10000);
     return () => clearInterval(interval);
@@ -38,7 +38,7 @@ export const AnalyticsDashboard = ({ isDark, activeApiUrl }) => {
     const usage = stats.usage || [];
     const totalRuns = usage.length;
     const uniqueIps = new Set(usage.map(u => u.ip)).size;
-    
+
     const successes = usage.filter(u => u.status === 'success').length;
     const successRate = totalRuns > 0 ? Math.round((successes / totalRuns) * 100) : 0;
 
@@ -63,7 +63,7 @@ export const AnalyticsDashboard = ({ isDark, activeApiUrl }) => {
       acc[featureName] = (acc[featureName] || 0) + 1;
       return acc;
     }, {});
-    const featureData = Object.keys(featureCounts).map(key => ({ name: key, value: featureCounts[key] })).sort((a,b) => b.value - a.value);
+    const featureData = Object.keys(featureCounts).map(key => ({ name: key, value: featureCounts[key] })).sort((a, b) => b.value - a.value);
 
     // Browser Distribution
     const browserCounts = usage.reduce((acc, curr) => {
@@ -71,7 +71,7 @@ export const AnalyticsDashboard = ({ isDark, activeApiUrl }) => {
       acc[browser] = (acc[browser] || 0) + 1;
       return acc;
     }, {});
-    const browserData = Object.keys(browserCounts).map(key => ({ name: key, value: browserCounts[key] })).sort((a,b) => b.value - a.value);
+    const browserData = Object.keys(browserCounts).map(key => ({ name: key, value: browserCounts[key] })).sort((a, b) => b.value - a.value);
 
     // Status (Success vs Error)
     const statusData = [
@@ -87,17 +87,17 @@ export const AnalyticsDashboard = ({ isDark, activeApiUrl }) => {
   return (
     <div className={`flex flex-col h-full w-full p-4 sm:p-8 overflow-y-auto custom-scrollbar ${isDark ? 'text-slate-200' : 'text-slate-800'}`}>
       <div className="flex items-center space-x-4 mb-8">
-        <button 
-          onClick={() => window.location.hash = ''} 
+        <button
+          onClick={() => window.location.hash = ''}
           className={`p-2 rounded-xl transition-colors ${isDark ? 'hover:bg-slate-800 bg-slate-800/50' : 'hover:bg-slate-200 bg-slate-100'}`}
         >
           <ArrowLeft className="w-5 h-5" />
         </button>
         <div className="flex items-center space-x-3">
-            <div className={`p-2 rounded-xl ${isDark ? 'bg-blue-500/20 text-blue-400' : 'bg-blue-100 text-blue-600'}`}>
-               <LayoutDashboard className="w-6 h-6" />
-            </div>
-            <h1 className="text-3xl font-bold tracking-tight">Analytics Overview</h1>
+          <div className={`p-2 rounded-xl ${isDark ? 'bg-blue-500/20 text-blue-400' : 'bg-blue-100 text-blue-600'}`}>
+            <LayoutDashboard className="w-6 h-6" />
+          </div>
+          <h1 className="text-3xl font-bold tracking-tight">Analytics Overview</h1>
         </div>
       </div>
 
@@ -120,7 +120,7 @@ export const AnalyticsDashboard = ({ isDark, activeApiUrl }) => {
                 </div>
               </div>
             </div>
-            
+
             <div className={cardClass}>
               <div className="flex items-center space-x-4">
                 <div className="p-3 bg-cyan-500/20 rounded-xl text-cyan-500">
@@ -156,9 +156,9 @@ export const AnalyticsDashboard = ({ isDark, activeApiUrl }) => {
                   <BarChart data={metrics.featureData} layout="vertical" margin={{ top: 5, right: 30, left: 40, bottom: 5 }}>
                     <XAxis type="number" hide />
                     <YAxis dataKey="name" type="category" axisLine={false} tickLine={false} tick={{ fill: isDark ? '#94a3b8' : '#64748b' }} />
-                    <RechartsTooltip 
-                        contentStyle={{ backgroundColor: isDark ? '#1e293b' : '#fff', borderRadius: '8px', border: 'none', color: isDark ? '#fff' : '#000' }}
-                        itemStyle={{ color: '#3b82f6' }}
+                    <RechartsTooltip
+                      contentStyle={{ backgroundColor: isDark ? '#1e293b' : '#fff', borderRadius: '8px', border: 'none', color: isDark ? '#fff' : '#000' }}
+                      itemStyle={{ color: '#3b82f6' }}
                     />
                     <Bar dataKey="value" fill="#3b82f6" radius={[0, 4, 4, 0]} barSize={20} />
                   </BarChart>

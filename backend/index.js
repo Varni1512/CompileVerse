@@ -1,3 +1,5 @@
+require('dotenv').config();
+const mongoose = require('mongoose');
 const express = require("express");
 const cors = require("cors");
 const helmet = require("helmet");
@@ -7,6 +9,15 @@ const { aiChat, getComplexityAnalysis, explainError } = require("./aiCodeReview"
 const { logUsage, getStats } = require("./analytics");
 
 const app = express();
+
+// Connect to MongoDB
+if (process.env.MONGODB_URI && process.env.MONGODB_URI !== 'your_mongodb_connection_string_here') {
+  mongoose.connect(process.env.MONGODB_URI)
+    .then(() => console.log('Connected to MongoDB Analytics Database'))
+    .catch(err => console.error('MongoDB Connection Error:', err));
+} else {
+  console.log('MongoDB URI not found in .env. Analytics will not be saved.');
+}
 
 // Trust the first proxy in front of the application (e.g. Nginx, Render, Heroku)
 // This is required for express-rate-limit to work correctly when deployed
@@ -150,8 +161,8 @@ app.post("/explain-error", async (req, res) => {
   }
 });
 
-app.get("/stats", (req, res) => {
-  const stats = getStats();
+app.get("/stats", async (req, res) => {
+  const stats = await getStats();
   res.json(stats);
 });
 

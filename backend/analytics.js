@@ -1,60 +1,52 @@
-const fs = require('fs');
-const path = require('path');
+const mongoose = require('mongoose');
 const UAParser = require('ua-parser-js');
 
-const STATS_FILE = path.join(__dirname, 'stats.json');
+const analyticsSchema = new mongoose.Schema({
+  ip: { type: String, required: true },
+  browser: { type: String, default: 'Unknown' },
+  os: { type: String, default: 'Unknown' },
+  endpoint: { type: String, required: true },
+  language: { type: String, default: 'unknown' },
+  status: { type: String, default: 'success' },
+  timestamp: { type: Date, default: Date.now }
+});
 
-// Initialize stats file if it doesn't exist
-if (!fs.existsSync(STATS_FILE)) {
-  fs.writeFileSync(STATS_FILE, JSON.stringify({ usage: [] }, null, 2));
-}
+const Analytics = mongoose.model('Analytics', analyticsSchema);
 
-function getStats() {
+async function getStats() {
   try {
-    const data = fs.readFileSync(STATS_FILE, 'utf8');
-    return JSON.parse(data);
+    // Return latest 1000 records
+    const usage = await Analytics.find().sort({ timestamp: -1 }).limit(1000).lean();
+    return { usage };
   } catch (err) {
+    console.error("Error fetching stats from MongoDB:", err);
     return { usage: [] };
   }
 }
 
-function saveStats(stats) {
+async function logUsage(ip, endpoint, language, status = 'success', userAgentString = '') {
   try {
-    fs.writeFileSync(STATS_FILE, JSON.stringify(stats, null, 2));
+    // Normalize local IPs
+    let queryIp = ip;
+    if (ip === '::1' || ip === '127.0.0.1' || ip === '::ffff:127.0.0.1') {
+      queryIp = '127.0.0.1'; // Localhost
+    }
+
+    const parser = new UAParser(userAgentString);
+    const browser = parser.getBrowser();
+    const os = parser.getOS();
+
+    await Analytics.create({
+      ip: queryIp,
+      browser: browser.name || 'Unknown',
+      os: os.name || 'Unknown',
+      endpoint,
+      language: language || 'unknown',
+      status
+    });
   } catch (err) {
-    console.error("Error saving stats:", err);
+    console.error("Error saving stats to MongoDB:", err);
   }
-}
-
-function logUsage(ip, endpoint, language, status = 'success', userAgentString = '') {
-  // Normalize local IPs
-  let queryIp = ip;
-  if (ip === '::1' || ip === '127.0.0.1' || ip === '::ffff:127.0.0.1') {
-    queryIp = '127.0.0.1'; // Localhost
-  }
-
-  const parser = new UAParser(userAgentString);
-  const browser = parser.getBrowser();
-  const os = parser.getOS();
-
-  const record = {
-    ip: queryIp,
-    browser: browser.name || 'Unknown',
-    os: os.name || 'Unknown',
-    endpoint,
-    language: language || 'unknown',
-    status,
-    timestamp: new Date().toISOString()
-  };
-
-  const stats = getStats();
-  // Keep only the last 1000 records to prevent file from growing indefinitely
-  if (stats.usage.length > 1000) {
-    stats.usage.shift(); 
-  }
-  stats.usage.push(record);
-  
-  saveStats(stats);
 }
 
 module.exports = {
