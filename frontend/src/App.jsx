@@ -25,7 +25,8 @@ const languageConfig = {
 
 function App() {
   const [language, setLanguage] = useState(() => {
-    return localStorage.getItem('selectedLanguage') || 'cpp';
+    const saved = localStorage.getItem('selectedLanguage');
+    return languageConfig[saved] ? saved : 'cpp';
   });
   const [code, setCode] = useState('');
   const [input, setInput] = useState('');
