@@ -43,8 +43,8 @@ export const useAiChat = (activeApiUrl, language, code, isDark) => {
       
       const data = await response.json();
       
-      if (data.review) {
-        setChatMessages(prev => [...prev, { role: 'assistant', content: data.review }]);
+      if (data.reply) {
+        setChatMessages(prev => [...prev, { role: 'assistant', content: data.reply }]);
       } else {
         throw new Error(data.error || 'Failed to get AI response');
       }
