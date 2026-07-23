@@ -1,12 +1,12 @@
 import React from 'react';
-import { Sun, Moon } from 'lucide-react';
+import { Sun, Moon, Code2 } from 'lucide-react';
 
 export const Header = ({ serverStatus, theme, setTheme, isDark }) => {
   return (
     <header className="flex justify-between items-center mb-4 flex-shrink-0">
       <div className="flex items-center space-x-3">
-        <div className="relative">
-          <img src="/icon.png" alt="Icon" className="w-8 h-8" />
+        <div className={`p-2 rounded-xl ${isDark ? 'bg-blue-500/20 text-blue-400' : 'bg-blue-100 text-blue-600'}`}>
+          <Code2 className="w-6 h-6" />
         </div>
         <div>
           <h1 className={`text-2xl font-bold ${isDark ? 'text-white' : 'text-gray-900'}`}>
