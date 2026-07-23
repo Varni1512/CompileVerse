@@ -34,7 +34,7 @@ export const BulkAddModal = ({
             Output 2
           </div>
           <textarea
-            className={`w-full h-64 p-3 font-mono text-sm rounded-lg border resize-none outline-none ${isDark ? 'bg-gray-900 text-gray-300 border-gray-700 focus:border-purple-500' : 'bg-gray-50 text-gray-800 border-gray-300 focus:border-purple-500'}`}
+            className={`w-full h-64 p-3 font-mono text-sm rounded-lg border resize-none outline-none ${isDark ? 'bg-gray-900 text-gray-300 border-gray-700 focus:border-blue-500' : 'bg-gray-50 text-gray-800 border-gray-300 focus:border-blue-500'}`}
             placeholder="Paste bulk test cases here..."
             value={bulkText}
             onChange={(e) => setBulkText(e.target.value)}
@@ -42,7 +42,7 @@ export const BulkAddModal = ({
         </div>
         <div className={`p-4 border-t flex justify-end space-x-3 ${isDark ? 'border-gray-700 bg-gray-900/50' : 'border-gray-200 bg-gray-50'} rounded-b-xl`}>
           <button onClick={() => setShowBulkModal(false)} className={`px-4 py-2 rounded-lg font-semibold ${isDark ? 'bg-gray-700 text-white hover:bg-gray-600' : 'bg-gray-200 text-gray-800 hover:bg-gray-300'}`}>Cancel</button>
-          <button onClick={handleBulkImport} className="px-4 py-2 rounded-lg font-semibold bg-purple-600 text-white hover:bg-purple-700">Import</button>
+          <button onClick={handleBulkImport} className="px-4 py-2 rounded-lg font-semibold bg-blue-600 text-white hover:bg-blue-700">Import</button>
         </div>
       </div>
     </div>

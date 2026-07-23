@@ -28,7 +28,7 @@ export const EditorToolbar = ({
           value={language}
           onChange={(e) => handleLanguageChange(e.target.value)}
           className={`px-3 py-1.5 rounded-lg border font-medium cursor-pointer text-sm ${isDark
-            ? 'bg-gray-800 text-white border-purple-500/30'
+            ? 'bg-gray-800 text-white border-blue-500/30'
             : 'bg-white text-gray-900 border-gray-300'
             }`}
         >
@@ -45,7 +45,7 @@ export const EditorToolbar = ({
             else if (e.target.value === 'light' && theme !== 'light') setTheme('light');
           }}
           className={`px-3 py-1.5 rounded-lg border font-medium cursor-pointer text-sm hidden sm:block ${isDark
-            ? 'bg-gray-800 text-white border-purple-500/30'
+            ? 'bg-gray-800 text-white border-blue-500/30'
             : 'bg-white text-gray-900 border-gray-300'
             }`}
         >

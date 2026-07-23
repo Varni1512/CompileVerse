@@ -32,7 +32,7 @@ export const OutputPanel = ({
             key={tab.id}
             onClick={() => setActiveTab(tab.id)}
             className={`flex-1 flex items-center cursor-pointer justify-center space-x-2 py-3 font-semibold text-sm transition-all border-b-2 ${activeTab === tab.id
-              ? isDark ? 'text-purple-400 border-purple-400 bg-purple-400/10' : 'text-purple-600 border-purple-600 bg-purple-50'
+              ? isDark ? 'text-blue-400 border-blue-400 bg-blue-400/10' : 'text-blue-600 border-blue-600 bg-blue-50'
               : isDark ? 'text-gray-400 border-transparent hover:text-gray-300' : 'text-gray-600 border-transparent hover:text-gray-800'
               }`}
           >

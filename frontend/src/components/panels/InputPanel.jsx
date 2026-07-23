@@ -18,7 +18,7 @@ export const InputPanel = ({
           <button
             onClick={() => setMode('custom')}
             className={`flex-1 sm:flex-none flex items-center justify-center space-x-2 px-3 py-1.5 rounded-lg text-sm font-semibold transition-all ${mode === 'custom'
-                ? isDark ? 'bg-purple-600 text-white' : 'bg-purple-600 text-white'
+                ? isDark ? 'bg-blue-600 text-white' : 'bg-blue-600 text-white'
                 : isDark ? 'bg-gray-800 text-gray-400 hover:text-gray-300' : 'bg-gray-100 text-gray-600 hover:text-gray-800'
               }`}
           >
@@ -28,7 +28,7 @@ export const InputPanel = ({
           <button
             onClick={() => setMode('tests')}
             className={`flex-1 sm:flex-none flex items-center justify-center space-x-2 px-3 py-1.5 rounded-lg text-sm font-semibold transition-all ${mode === 'tests'
-                ? isDark ? 'bg-pink-600 text-white' : 'bg-pink-600 text-white'
+                ? isDark ? 'bg-slate-700 text-white' : 'bg-slate-700 text-white'
                 : isDark ? 'bg-gray-800 text-gray-400 hover:text-gray-300' : 'bg-gray-100 text-gray-600 hover:text-gray-800'
               }`}
           >
@@ -40,7 +40,7 @@ export const InputPanel = ({
 
       {mode === 'custom' ? (
         <textarea
-          className={`w-full flex-1 min-h-0 p-3 text-sm rounded-lg border resize-none ${isDark ? 'bg-gray-800 text-white border-gray-600 focus:border-purple-500 focus:ring-1 focus:ring-purple-500' : 'bg-gray-50 text-gray-900 border-gray-300 focus:border-purple-500 focus:ring-1 focus:ring-purple-500'} outline-none transition-all`}
+          className={`w-full flex-1 min-h-0 p-3 text-sm rounded-lg border resize-none ${isDark ? 'bg-gray-800 text-white border-gray-600 focus:border-blue-500 focus:ring-1 focus:ring-blue-500' : 'bg-gray-50 text-gray-900 border-gray-300 focus:border-blue-500 focus:ring-1 focus:ring-blue-500'} outline-none transition-all`}
           placeholder="Enter program input here..."
           value={input}
           onChange={(e) => setInput(e.target.value)}

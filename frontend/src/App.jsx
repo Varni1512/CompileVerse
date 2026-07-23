@@ -195,8 +195,8 @@ function App() {
   if (showDashboard) {
     return (
       <div className={`min-h-screen lg:h-screen w-full lg:overflow-hidden transition-all duration-300 ${isDark
-        ? 'bg-gradient-to-br from-gray-900 via-purple-900/20 to-gray-900'
-        : 'bg-gradient-to-br from-blue-50 via-purple-50/30 to-pink-50/20'
+        ? 'bg-slate-900'
+        : 'bg-slate-50'
         }`}>
         <AnalyticsDashboard isDark={isDark} activeApiUrl={activeApiUrl} />
       </div>
@@ -205,8 +205,8 @@ function App() {
 
   return (
     <div className={`min-h-screen lg:h-screen w-full lg:overflow-hidden transition-all duration-300 ${isDark
-      ? 'bg-gradient-to-br from-gray-900 via-purple-900/20 to-gray-900'
-      : 'bg-gradient-to-br from-blue-50 via-purple-50/30 to-pink-50/20'
+      ? 'bg-slate-900'
+      : 'bg-slate-50'
       }`}>
 
       <div className="relative z-10 flex h-full flex-col p-2 sm:p-4">
@@ -221,7 +221,7 @@ function App() {
 
           <section className="w-full lg:w-7/12 flex flex-col min-h-0">
             <div className={`flex-1 min-h-0 flex flex-col rounded-xl shadow-lg border overflow-hidden ${isDark
-              ? 'bg-gray-900/80 border-purple-500/30 shadow-purple-500/20'
+              ? 'bg-gray-900/80 border-blue-500/30 shadow-blue-500/20'
               : 'bg-white/90 border-gray-200 shadow-gray-300/30'
               }`}>
 
@@ -261,7 +261,7 @@ function App() {
                     disabled={isRunning}
                     className={`flex-1 sm:flex-none flex items-center justify-center space-x-2 px-6 py-2 rounded-lg font-bold text-white shadow-lg transition-all transform hover:scale-[1.02] active:scale-95 ${isRunning
                         ? 'bg-gray-500 cursor-not-allowed'
-                        : 'bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-500 hover:to-pink-500'
+                        : 'bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-500 hover:to-cyan-500'
                       }`}
                   >
                     {isRunning ? (

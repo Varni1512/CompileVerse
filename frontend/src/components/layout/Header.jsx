@@ -10,7 +10,7 @@ export const Header = ({ serverStatus, theme, setTheme, isDark }) => {
         </div>
         <div>
           <h1 className={`text-2xl font-bold ${isDark ? 'text-white' : 'text-gray-900'}`}>
-            <span className="bg-gradient-to-r from-purple-500 via-pink-500 to-cyan-500 bg-clip-text text-transparent">
+            <span className="bg-gradient-to-r from-blue-400 to-cyan-400 bg-clip-text text-transparent">
               CompileVerse
             </span>
           </h1>
@@ -41,11 +41,11 @@ export const Header = ({ serverStatus, theme, setTheme, isDark }) => {
         <Sun className={`w-4 h-4 ${!isDark ? 'text-yellow-500' : 'text-gray-500'}`} />
         <button
           onClick={() => setTheme(isDark ? 'light' : 'dark')}
-          className={`relative w-12 h-6 rounded-full cursor-pointer transition-colors duration-300 ${isDark ? 'bg-purple-600' : 'bg-gray-300'}`}
+          className={`relative w-12 h-6 rounded-full cursor-pointer transition-colors duration-300 ${isDark ? 'bg-blue-600' : 'bg-gray-300'}`}
         >
           <div className={`absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full transition-transform duration-300 ${isDark ? 'translate-x-6' : 'translate-x-0'}`}></div>
         </button>
-        <Moon className={`w-4 h-4 ${isDark ? 'text-purple-800' : 'text-gray-500'}`} />
+        <Moon className={`w-4 h-4 ${isDark ? 'text-blue-800' : 'text-gray-500'}`} />
       </div>
     </header>
   );

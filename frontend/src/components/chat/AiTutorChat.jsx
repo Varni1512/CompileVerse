@@ -18,7 +18,7 @@ export const AiTutorChat = ({
         {chatMessages.filter(m => m.role !== 'system').map((msg, idx) => (
           <div key={idx} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
             <div className={`max-w-[85%] rounded-2xl px-4 py-2 ${msg.role === 'user' 
-              ? 'bg-purple-600 text-white rounded-br-sm' 
+              ? 'bg-blue-600 text-white rounded-br-sm' 
               : isDark ? 'bg-gray-800 text-gray-200 border border-gray-700 rounded-bl-sm' : 'bg-white text-gray-800 border border-gray-200 rounded-bl-sm shadow-sm'}`}>
               {msg.role === 'assistant' ? (
                 <div className="space-y-2">
@@ -80,7 +80,7 @@ export const AiTutorChat = ({
         <button 
           onClick={handleSendChat}
           disabled={isChatLoading || !chatInput.trim()}
-          className={`p-2 rounded-lg mb-1 flex-shrink-0 transition-all ${!chatInput.trim() || isChatLoading ? 'opacity-50 cursor-not-allowed text-gray-400' : 'bg-purple-600 hover:bg-purple-700 text-white shadow-md'}`}
+          className={`p-2 rounded-lg mb-1 flex-shrink-0 transition-all ${!chatInput.trim() || isChatLoading ? 'opacity-50 cursor-not-allowed text-gray-400' : 'bg-blue-600 hover:bg-blue-700 text-white shadow-md'}`}
         >
           <ArrowRight className="w-5 h-5" />
         </button>

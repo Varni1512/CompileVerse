@@ -40,14 +40,14 @@ export const AnalyticsDashboard = ({ isDark, activeApiUrl }) => {
         >
           <ArrowLeft className="w-6 h-6" />
         </button>
-        <h1 className="text-3xl font-bold bg-gradient-to-r from-purple-500 to-pink-500 bg-clip-text text-transparent">
+        <h1 className="text-3xl font-bold bg-gradient-to-r from-blue-500 to-cyan-500 bg-clip-text text-transparent">
           Analytics Dashboard
         </h1>
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-8">
         <div className={`p-6 rounded-xl shadow-lg border flex items-center space-x-4 ${isDark ? 'bg-gray-900/80 border-gray-700' : 'bg-white/90 border-gray-200'}`}>
-          <div className="p-3 bg-purple-500/20 rounded-lg text-purple-500">
+          <div className="p-3 bg-blue-500/20 rounded-lg text-blue-500">
             <Users className="w-8 h-8" />
           </div>
           <div>
@@ -57,7 +57,7 @@ export const AnalyticsDashboard = ({ isDark, activeApiUrl }) => {
         </div>
         
         <div className={`p-6 rounded-xl shadow-lg border flex items-center space-x-4 ${isDark ? 'bg-gray-900/80 border-gray-700' : 'bg-white/90 border-gray-200'}`}>
-          <div className="p-3 bg-pink-500/20 rounded-lg text-pink-500">
+          <div className="p-3 bg-cyan-500/20 rounded-lg text-cyan-500">
             <Activity className="w-8 h-8" />
           </div>
           <div>
@@ -70,14 +70,14 @@ export const AnalyticsDashboard = ({ isDark, activeApiUrl }) => {
       <div className={`flex-1 rounded-xl shadow-lg border overflow-hidden flex flex-col ${isDark ? 'bg-gray-900/80 border-gray-700' : 'bg-white/90 border-gray-200'}`}>
         <div className={`p-4 border-b ${isDark ? 'border-gray-700' : 'border-gray-200'}`}>
           <h3 className="text-lg font-bold flex items-center space-x-2">
-            <Globe className="w-5 h-5 text-purple-500" />
+            <Globe className="w-5 h-5 text-blue-500" />
             <span>Recent Activity</span>
           </h3>
         </div>
         <div className="overflow-x-auto flex-1">
           {loading ? (
             <div className="flex justify-center items-center h-48">
-              <Activity className="w-8 h-8 text-purple-500 animate-spin" />
+              <Activity className="w-8 h-8 text-blue-500 animate-spin" />
             </div>
           ) : (
             <table className="w-full text-left border-collapse min-w-[600px]">
