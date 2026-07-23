@@ -14,7 +14,8 @@ import {
   FlaskConical,
   Plus,
   Trash2,
-  AlignLeft
+  AlignLeft,
+  ArrowRight
 } from 'lucide-react';
 import Editor from '@monaco-editor/react';
 import { customThemes } from './themes';
@@ -57,15 +58,6 @@ const extractCodeBlocks = (text) => {
       startIndex: match.index,
       endIndex: match.index + match[0].length
     });
-  }
-
-  if (codeBlocks.length === 0 && text.trim().length > 0) {
-    return [{
-      lang: 'plaintext',
-      code: text.trim(),
-      startIndex: 0,
-      endIndex: text.length
-    }];
   }
 
   return codeBlocks;
@@ -147,9 +139,12 @@ function SimpleCompiler() {
   const [code, setCode] = useState('');
   const [output, setOutput] = useState('');
   const [input, setInput] = useState('');
-  const [aiReview, setAiReview] = useState('');
-  const [isRunning, setIsRunning] = useState(false);
-  const [isReviewing, setIsReviewing] = useState(false);
+  const [chatMessages, setChatMessages] = useState([{
+    role: 'assistant',
+    content: "Hi! I'm your AI Coding Tutor. How can I help you with your code today?"
+  }]);
+  const [chatInput, setChatInput] = useState('');
+  const [isChatLoading, setIsChatLoading] = useState(false);
   const [theme, setTheme] = useState('dark');
   const [copied, setCopied] = useState(false);
   const [executionTime, setExecutionTime] = useState(null);
@@ -166,7 +161,43 @@ function SimpleCompiler() {
   const [testResults, setTestResults] = useState(null);
 
   const [editorTheme, setEditorTheme] = useState('vs-dark');
+  const [isRunning, setIsRunning] = useState(false);
   const editorRef = useRef(null);
+  const chatScrollRef = useRef(null);
+
+  useEffect(() => {
+    if (chatScrollRef.current) {
+      chatScrollRef.current.scrollTop = chatScrollRef.current.scrollHeight;
+    }
+  }, [chatMessages]);
+
+  const handleSendChat = async () => {
+    if (!chatInput.trim()) return;
+    
+    const newMessages = [...chatMessages, { role: 'user', content: chatInput }];
+    setChatMessages(newMessages);
+    setChatInput('');
+    setIsChatLoading(true);
+
+    try {
+      const response = await fetch(`${activeApiUrl}/ai-review`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ messages: newMessages.map(m => ({ role: m.role, content: m.content })), code, language }),
+      });
+      const data = await response.json();
+      
+      if (response.ok) {
+        setChatMessages([...newMessages, { role: 'assistant', content: data.reply }]);
+      } else {
+        setChatMessages([...newMessages, { role: 'assistant', content: `Error: ${data.error}` }]);
+      }
+    } catch (error) {
+      setChatMessages([...newMessages, { role: 'assistant', content: `Error: ${error.message}` }]);
+    } finally {
+      setIsChatLoading(false);
+    }
+  };
 
   const [activeApiUrl, setActiveApiUrl] = useState(() => {
     if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
@@ -381,24 +412,7 @@ function SimpleCompiler() {
     }
   };
 
-  const handleAiReview = async () => {
-    setIsReviewing(true);
-    setAiReview('');
-    setActiveTab('review');
-    try {
-      const response = await fetch(`${activeApiUrl}/ai-review`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ code }),
-      });
-      const data = await response.json();
-      setAiReview(response.ok ? data.review : 'Error: ' + (data.error || 'Review failed'));
-    } catch (error) {
-      setAiReview('Error: ' + error.message);
-    } finally {
-      setIsReviewing(false);
-    }
-  };
+
 
   const copyToClipboard = () => {
     navigator.clipboard.writeText(code);
@@ -593,17 +607,7 @@ function SimpleCompiler() {
                       : <><Play className="w-4 h-4" /><span>Run</span></>}
                   </button>
 
-                  <button
-                    onClick={() => {
-                      setActiveTab('review');
-                      handleAiReview();
-                    }}
-                    disabled={isReviewing}
-                    className={`flex-none flex items-center justify-center cursor-pointer space-x-2 py-2 px-6 rounded-lg font-bold text-white transition-all transform hover:scale-105 ${isReviewing ? 'bg-gray-500 cursor-not-allowed scale-100' : 'bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 shadow-md shadow-emerald-500/25'}`}
-                  >
-                    {isReviewing ? <><div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div><span>Reviewing</span></>
-                      : <><Bot className="w-4 h-4" /><span>Review</span></>}
-                  </button>
+
                 </div>
               </div>
             </div>
@@ -622,17 +626,7 @@ function SimpleCompiler() {
                   : <><Play className="w-5 h-5 fill-current" /><span className="text-sm sm:text-base">Run Code</span></>}
               </button>
 
-              <button
-                onClick={() => {
-                  setActiveTab('review');
-                  handleAiReview();
-                }}
-                disabled={isReviewing}
-                className={`flex-1 flex items-center justify-center cursor-pointer space-x-2 py-3 px-4 sm:px-6 rounded-xl font-bold text-white transition-all transform hover:scale-[1.02] active:scale-95 ${isReviewing ? 'bg-gray-500 cursor-not-allowed' : 'bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 shadow-lg shadow-emerald-500/25'}`}
-              >
-                {isReviewing ? <><div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div><span className="text-sm sm:text-base">Reviewing...</span></>
-                  : <><Bot className="w-5 h-5" /><span className="text-sm sm:text-base">AI Review</span></>}
-              </button>
+
             </div>
           </section>
 
@@ -746,7 +740,7 @@ function SimpleCompiler() {
                 ))}
               </div>
 
-              <div className="p-2 sm:p-4 flex-1 overflow-y-auto min-h-0">
+              <div className={`flex-1 min-h-0 ${activeTab === 'review' ? 'flex flex-col' : 'p-2 sm:p-4 overflow-y-auto'}`}>
                 {activeTab === 'output' && (
                   <div>
                     {mode === 'custom' && output && (
@@ -847,71 +841,78 @@ function SimpleCompiler() {
                   </div>
                 )}
                 {activeTab === 'review' && (
-                  <div>
-                    {aiReview ? (
-                      typeof aiReview === 'object' ? (
-                        <div className="space-y-4">
-                          {aiReview.optimizedCode === "ALREADY_OPTIMIZED" ? (
-                            <div className={`p-4 mt-3 rounded-xl border flex items-center space-x-3 ${isDark ? 'bg-green-900/20 border-green-800 text-green-400' : 'bg-green-50 border-green-200 text-green-700'}`}>
-                              <Check className="w-5 h-5 flex-shrink-0" />
-                              <p className="font-medium text-sm">Your code is already fully optimized! Great job! ✨</p>
-                            </div>
-                          ) : (
-                            <HighlightedCodeBlock code={aiReview.optimizedCode} lang={currentLang.monaco} isDark={isDark} />
-                          )}
-                          <div className={`p-4 rounded-xl border ${isDark ? 'bg-gray-800/50 border-gray-700' : 'bg-white border-gray-200'}`}>
-                            <p className={`font-semibold ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>
-                              Time Complexity: <span className="text-purple-500 font-normal">{aiReview.timeComplexity}</span>
-                            </p>
-                            <p className={`font-semibold mt-2 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>
-                              Space Complexity: <span className="text-pink-500 font-normal">{aiReview.spaceComplexity}</span>
-                            </p>
+                  <div className="flex flex-col h-full w-full">
+                    <div className="flex-1 overflow-y-auto p-2 sm:p-4 custom-scrollbar space-y-4" ref={chatScrollRef}>
+                      {chatMessages.filter(m => m.role !== 'system').map((msg, idx) => (
+                        <div key={idx} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
+                          <div className={`max-w-[85%] rounded-2xl px-4 py-2 ${msg.role === 'user' 
+                            ? 'bg-purple-600 text-white rounded-br-sm' 
+                            : isDark ? 'bg-gray-800 text-gray-200 border border-gray-700 rounded-bl-sm' : 'bg-white text-gray-800 border border-gray-200 rounded-bl-sm shadow-sm'}`}>
+                            {msg.role === 'assistant' ? (
+                              <div className="space-y-2">
+                                {formatAiReview(msg.content)?.map((section, sIndex) => (
+                                  <div key={sIndex} className="py-1">
+                                    <div className="space-y-2">
+                                      {(() => {
+                                        let lastIndex = 0;
+                                        const elements = [];
+                                        section.codeBlocks.forEach((codeBlock, blockIndex) => {
+                                          const textBefore = section.content.slice(lastIndex, codeBlock.startIndex);
+                                          if (textBefore.trim()) {
+                                            const formatted = textBefore.trim().replace(/^#+\s*/gm, '').replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+                                            elements.push(<div key={`text-${blockIndex}`} className="text-sm leading-relaxed whitespace-pre-wrap" dangerouslySetInnerHTML={{ __html: formatted }} />);
+                                          }
+                                          elements.push(<HighlightedCodeBlock key={`code-${blockIndex}`} code={codeBlock.code} lang={codeBlock.lang} isDark={isDark} />);
+                                          lastIndex = codeBlock.endIndex;
+                                        });
+                                        const textAfter = section.content.slice(lastIndex);
+                                        if (textAfter.trim()) {
+                                          const formatted = textAfter.trim().replace(/^#+\s*/gm, '').replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+                                          elements.push(<div key="text-final" className="text-sm leading-relaxed whitespace-pre-wrap" dangerouslySetInnerHTML={{ __html: formatted }} />);
+                                        }
+                                        return elements;
+                                      })()}
+                                    </div>
+                                  </div>
+                                ))}
+                              </div>
+                            ) : (
+                              <div className="text-sm whitespace-pre-wrap">{msg.content}</div>
+                            )}
                           </div>
                         </div>
-                      ) : (
-                        <div className="space-y-4">
-                          {formatAiReview(aiReview)?.map((section, index) => (
-                            <div key={index} className="py-1">
-                              <div className="space-y-3">
-                                {(() => {
-                                  let lastIndex = 0;
-                                  const elements = [];
-
-                                  section.codeBlocks.forEach((codeBlock, blockIndex) => {
-                                    const textBefore = section.content.slice(lastIndex, codeBlock.startIndex);
-                                    if (textBefore.trim()) {
-                                      elements.push(
-                                        <div key={`text-${blockIndex}`} className={`text-sm leading-relaxed whitespace-pre-wrap ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>
-                                          {textBefore.trim()}
-                                        </div>
-                                      );
-                                    }
-                                    elements.push(
-                                      <HighlightedCodeBlock key={`code-${blockIndex}`} code={codeBlock.code} lang={codeBlock.lang} isDark={isDark} />
-                                    );
-                                    lastIndex = codeBlock.endIndex;
-                                  });
-
-                                  const textAfter = section.content.slice(lastIndex);
-                                  if (textAfter.trim()) {
-                                    elements.push(
-                                      <div key="text-final" className={`text-sm leading-relaxed whitespace-pre-wrap ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>
-                                        {textAfter.trim()}
-                                      </div>
-                                    );
-                                  }
-                                  return elements;
-                                })()}
-                              </div>
-                            </div>
-                          ))}
+                      ))}
+                      {isChatLoading && (
+                        <div className="flex justify-start">
+                          <div className={`rounded-2xl px-4 py-3 rounded-bl-sm flex space-x-2 items-center ${isDark ? 'bg-gray-800 border border-gray-700' : 'bg-white border border-gray-200'}`}>
+                            <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce"></div>
+                            <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
+                            <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0.4s' }}></div>
+                          </div>
                         </div>
-                      )
-                    ) : (
-                      <div className={`text-center py-8 ${isDark ? 'text-gray-500' : 'text-gray-400'}`}>
-                        <Bot className="w-12 h-12 mx-auto mb-3 opacity-50" /><p className="font-medium">No AI review yet</p><p className="text-sm">Click "Review" for AI analysis</p>
-                      </div>
-                    )}
+                      )}
+                    </div>
+                    <div className={`p-2 flex-shrink-0 flex items-end space-x-2 border-t ${isDark ? 'bg-gray-900 border-gray-700' : 'bg-white border-gray-200'}`}>
+                      <textarea 
+                        className={`flex-1 min-h-[44px] max-h-32 p-2 text-sm bg-transparent outline-none resize-none ${isDark ? 'text-white placeholder-gray-500' : 'text-gray-900 placeholder-gray-400'}`}
+                        placeholder="Ask your tutor about the code..."
+                        value={chatInput}
+                        onChange={(e) => setChatInput(e.target.value)}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter' && !e.shiftKey) {
+                            e.preventDefault();
+                            handleSendChat();
+                          }
+                        }}
+                      />
+                      <button 
+                        onClick={handleSendChat}
+                        disabled={isChatLoading || !chatInput.trim()}
+                        className={`p-2 rounded-lg mb-1 flex-shrink-0 transition-all ${!chatInput.trim() || isChatLoading ? 'opacity-50 cursor-not-allowed text-gray-400' : 'bg-purple-600 hover:bg-purple-700 text-white shadow-md'}`}
+                      >
+                        <ArrowRight className="w-5 h-5" />
+                      </button>
+                    </div>
                   </div>
                 )}
               </div>

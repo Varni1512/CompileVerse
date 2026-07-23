@@ -3,7 +3,7 @@ const cors = require("cors");
 const helmet = require("helmet");
 const rateLimit = require("express-rate-limit");
 const { executeCode, executeTests } = require("./executeCode");
-const { aiCodeReview, getComplexityAnalysis, explainError } = require("./aiCodeReview");
+const { aiChat, getComplexityAnalysis, explainError } = require("./aiCodeReview");
 
 const app = express();
 
@@ -107,13 +107,13 @@ app.post("/analyze", async (req, res) => {
 });
 
 app.post("/ai-review", async (req, res) => {
-  const { code } = req.body;
-  if (!code || code.trim() === '') {
-    return res.status(400).json({ success: false, error: "Code is required." });
+  const { messages, code, language } = req.body;
+  if (!messages || !Array.isArray(messages)) {
+    return res.status(400).json({ success: false, error: "Messages array is required." });
   }
   try {
-    const review = await aiCodeReview(code);
-    res.status(200).json({ review });
+    const reply = await aiChat(messages, code, language);
+    res.status(200).json({ reply });
   } catch (error) {
     if (error.status === 429 || error?.error?.error?.code === "rate_limit_exceeded") {
       return res.status(429).json({ success: false, error: "AI API limit reached. Please wait a few minutes before trying again." });

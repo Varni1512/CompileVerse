@@ -5,57 +5,30 @@ dotenv.config();
 
 const groq = new Groq({ apiKey: process.env.GROQ_API_KEY || "missing_key" });
 
-const aiCodeReview = async (code) => {
+const aiChat = async (messages, code, language) => {
+    const systemPrompt = {
+        role: "system",
+        content: `You are an expert programming tutor and strict mentor. 
+Your goal is to guide the user to solve their coding problems without ever giving them the full solution.
+
+STRICT RULES:
+1. NEVER provide the complete corrected code or full solutions. 
+2. Only provide hints, explain concepts, point out bugs, or give very small snippets (e.g. 1-2 lines) to illustrate a syntax rule.
+3. The user is currently writing in ${language}. Here is their current code context:
+\`\`\`${language}
+${code}
+\`\`\`
+4. If the user asks a question completely unrelated to the provided code context, DO NOT give long explanations. Simply and directly reply with: "Please ask questions related to the current code."
+5. IMPORTANT FORMATTING: Do NOT use markdown headers like '#', '##', or '###'. Keep your formatting completely clean and plain. You may use backticks for code and ** for bold text, but NO headers or complex markdown.`
+    };
+
     const completion = await groq.chat.completions.create({
-        messages: [
-            {
-                role: "system",
-                content: "You are an expert code optimizer."
-            },
-            {
-                role: "user",
-                content: `Your task:
-1. Provide an optimized version of the following code. IF the code is already fully optimized and cannot be meaningfully improved, write exactly "ALREADY_OPTIMIZED" inside the code block.
-2. Provide the Time Complexity and Space Complexity.
-
-Format your response EXACTLY like this:
-
-\`\`\`
-[your optimized code here with preserved indentation and newlines, OR "ALREADY_OPTIMIZED"]
-\`\`\`
-TIME_COMPLEXITY: [your time complexity, e.g. O(n)]
-SPACE_COMPLEXITY: [your space complexity, e.g. O(1)]
-
-Here is the code:
-${code}`
-            }
-        ],
+        messages: [systemPrompt, ...messages],
         model: "llama-3.3-70b-versatile",
     });
 
     const responseText = completion.choices[0]?.message?.content || "";
-    console.log(responseText);
-    
-    // Parse the markdown response
-    const codeMatch = responseText.match(/```[\w]*\n([\s\S]*?)```/);
-    const tcMatch = responseText.match(/TIME_COMPLEXITY:\s*(.*)/);
-    const scMatch = responseText.match(/SPACE_COMPLEXITY:\s*(.*)/);
-
-    let optimizedCode = codeMatch ? codeMatch[1].trim() : responseText.replace(/```[\s\S]*/, '').trim();
-
-    // If the LLM returned the exact same code (ignoring whitespace), it means no improvements were made.
-    if (
-        optimizedCode === "ALREADY_OPTIMIZED" || 
-        optimizedCode.replace(/\s+/g, '') === code.replace(/\s+/g, '')
-    ) {
-        optimizedCode = "ALREADY_OPTIMIZED";
-    }
-
-    return {
-        optimizedCode: optimizedCode,
-        timeComplexity: tcMatch ? tcMatch[1].trim() : "Unknown",
-        spaceComplexity: scMatch ? scMatch[1].trim() : "Unknown"
-    };
+    return responseText;
 };
 
 // New function for complexity analysis only
@@ -119,7 +92,7 @@ Keep your explanation clear, concise, and beginner-friendly. Focus on helping th
 };
 
 module.exports = {
-    aiCodeReview,
+    aiChat,
     getComplexityAnalysis,
     explainError,
 };
