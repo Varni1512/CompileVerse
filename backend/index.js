@@ -4,6 +4,7 @@ const helmet = require("helmet");
 const rateLimit = require("express-rate-limit");
 const { executeCode, executeTests } = require("./executeCode");
 const { aiChat, getComplexityAnalysis, explainError } = require("./aiCodeReview");
+const { logUsage, getStats } = require("./analytics");
 
 const app = express();
 
@@ -50,6 +51,7 @@ app.post("/run", async (req, res) => {
 
   try {
     const output = await executeCode(language, code, input);
+    logUsage(req.ip, '/run', language);
     res.json({ output });
   } catch (err) {
     console.error("Execution Error:", err);
@@ -67,6 +69,8 @@ app.post("/run-tests", async (req, res) => {
   try {
     const inputs = testCases.map(tc => tc.input);
     const results = await executeTests(language, code, inputs);
+
+    logUsage(req.ip, '/run-tests', language);
 
     const formattedResults = results.map((result, index) => {
       if (!result.success) {
@@ -138,7 +142,10 @@ app.post("/explain-error", async (req, res) => {
   }
 });
 
-
+app.get("/stats", (req, res) => {
+  const stats = getStats();
+  res.json(stats);
+});
 
 const PORT = process.env.PORT || 8000;
 app.listen(PORT, () => {
