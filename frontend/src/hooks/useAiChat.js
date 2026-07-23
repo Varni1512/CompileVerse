@@ -37,8 +37,7 @@ export const useAiChat = (activeApiUrl, language, code, isDark) => {
         body: JSON.stringify({ 
           language, 
           code,
-          chatHistory: chatMessages,
-          newMessage: userMessage
+          messages: [...chatMessages, { role: 'user', content: userMessage }]
         }),
       });
       
