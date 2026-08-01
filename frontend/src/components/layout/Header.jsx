@@ -33,14 +33,17 @@ export const Header = ({ serverStatus, theme, setTheme, isDark }) => {
       </div>
 
       <div className="flex items-center space-x-2 sm:space-x-3">
-        <Sun className={`w-4 h-4 ${!isDark ? 'text-yellow-500' : 'text-gray-500'}`} />
-        <button
-          onClick={() => setTheme(isDark ? 'light' : 'dark')}
-          className={`relative w-12 h-6 rounded-full cursor-pointer transition-colors duration-300 ${isDark ? 'bg-blue-600' : 'bg-gray-300'}`}
-        >
-          <div className={`absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full transition-transform duration-300 ${isDark ? 'translate-x-6' : 'translate-x-0'}`}></div>
-        </button>
-        <Moon className={`w-4 h-4 ${isDark ? 'text-blue-800' : 'text-gray-500'}`} />
+        {/* Theme Toggle */}
+        <div className="flex items-center space-x-1.5 sm:space-x-2">
+          <Sun className={`w-4 h-4 ${!isDark ? 'text-yellow-500' : 'text-gray-500'}`} />
+          <button
+            onClick={() => setTheme(isDark ? 'light' : 'dark')}
+            className={`relative w-12 h-6 rounded-full cursor-pointer transition-colors duration-300 ${isDark ? 'bg-blue-600' : 'bg-gray-300'}`}
+          >
+            <div className={`absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full transition-transform duration-300 ${isDark ? 'translate-x-6' : 'translate-x-0'}`}></div>
+          </button>
+          <Moon className={`w-4 h-4 ${isDark ? 'text-blue-800' : 'text-gray-500'}`} />
+        </div>
       </div>
     </header>
   );

@@ -61,7 +61,7 @@ function App() {
   const isDark = theme === 'dark';
 
   const {
-    chatMessages, isChatLoading, chatInput, setChatInput, chatScrollRef, handleSendChat, setChatMessages
+    chatMessages, isChatLoading, chatInput, setChatInput, chatScrollRef, handleSendChat, setChatMessages, aiUsage, fetchAiLimitStatus
   } = useAiChat(activeApiUrl, language, code, isDark);
 
   useEffect(() => {
@@ -306,6 +306,7 @@ function App() {
               chatInput={chatInput}
               setChatInput={setChatInput}
               handleSendChat={handleSendChat}
+              aiUsage={aiUsage}
             />
           </section>
         </main>

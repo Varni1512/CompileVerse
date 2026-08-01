@@ -1,5 +1,5 @@
 import React from 'react';
-import { ArrowRight } from 'lucide-react';
+import { ArrowRight, Bot, Sparkles, AlertCircle, ShieldAlert, ArrowUpRight } from 'lucide-react';
 import { HighlightedCodeBlock } from './HighlightedCodeBlock';
 import { formatAiReview } from '../../utils/chatFormatters';
 
@@ -10,10 +10,50 @@ export const AiTutorChat = ({
   isChatLoading, 
   chatInput, 
   setChatInput, 
-  handleSendChat 
+  handleSendChat,
+  aiUsage
 }) => {
+  const isLimitReached = aiUsage && (aiUsage.limitReached || (aiUsage.loaded && aiUsage.remaining <= 0));
+  const used = aiUsage?.used ?? 0;
+  const limit = aiUsage?.limit ?? 5;
+  const remaining = aiUsage?.remaining ?? Math.max(0, limit - used);
+
   return (
     <div className="flex flex-col h-full w-full relative">
+      {/* Header Bar with Usage Badge */}
+      <div className={`px-4 py-2.5 flex items-center justify-between border-b flex-shrink-0 text-xs font-medium ${
+        isDark ? 'bg-gray-800/60 border-gray-700/80 text-gray-300' : 'bg-gray-50/90 border-gray-200 text-gray-600'
+      }`}>
+        <div className="flex items-center space-x-2">
+          <div className="p-1 rounded-md bg-blue-500/20 text-blue-400">
+            <Sparkles className="w-3.5 h-3.5 text-blue-400" />
+          </div>
+          <span className="font-semibold">AI Coding Tutor</span>
+        </div>
+
+        {/* Dynamic Usage Pill */}
+        <div className="flex items-center space-x-2">
+          <div className={`px-2.5 py-1 rounded-full flex items-center space-x-1.5 transition-colors border ${
+            isLimitReached 
+              ? isDark ? 'bg-red-950/60 text-red-400 border-red-800/80' : 'bg-red-50 text-red-600 border-red-200'
+              : remaining <= 1 
+                ? isDark ? 'bg-amber-950/60 text-amber-300 border-amber-800/80' : 'bg-amber-50 text-amber-700 border-amber-200'
+                : isDark ? 'bg-blue-950/60 text-blue-300 border-blue-800/80' : 'bg-blue-50 text-blue-700 border-blue-200'
+          }`}>
+            <span className={`w-1.5 h-1.5 rounded-full ${
+              isLimitReached ? 'bg-red-500 animate-pulse' : remaining <= 1 ? 'bg-amber-500' : 'bg-blue-500'
+            }`} />
+            <span className="font-mono font-semibold">
+              {used}/{limit}
+            </span>
+            <span className="opacity-80">
+              ({isLimitReached ? 'Limit reached' : `${remaining} left`})
+            </span>
+          </div>
+        </div>
+      </div>
+
+      {/* Messages Scroll Area */}
       <div className="flex-1 overflow-y-auto p-2 sm:p-4 custom-scrollbar space-y-4" ref={chatScrollRef}>
         {chatMessages.filter(m => m.role !== 'system').map((msg, idx) => (
           <div key={idx} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
@@ -64,11 +104,33 @@ export const AiTutorChat = ({
           </div>
         )}
       </div>
+
+      {/* Limit Reached Warning Banner */}
+      {isLimitReached && (
+        <div className={`mx-3 mb-2 p-3 rounded-xl border flex items-center justify-between text-xs transition-all ${
+          isDark 
+            ? 'bg-red-950/40 border-red-800/80 text-red-300' 
+            : 'bg-red-50 border-red-200 text-red-800'
+        }`}>
+          <div className="flex items-center space-x-2.5">
+            <ShieldAlert className="w-4 h-4 text-red-500 flex-shrink-0" />
+            <div>
+              <span className="font-semibold">AI message limit reached ({used}/{limit} messages).</span>
+              <span className="block text-[11px] opacity-80 mt-0.5">Please contact the administrator to request an increase.</span>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Input Section */}
       <div className={`p-2 flex-shrink-0 flex items-end space-x-2 border-t ${isDark ? 'bg-gray-900 border-gray-700' : 'bg-white border-gray-200'}`}>
         <textarea 
-          className={`flex-1 min-h-[44px] max-h-32 p-2 text-sm bg-transparent outline-none resize-none ${isDark ? 'text-white placeholder-gray-500' : 'text-gray-900 placeholder-gray-400'}`}
-          placeholder="Ask your tutor about the code..."
+          className={`flex-1 min-h-[44px] max-h-32 p-2 text-sm bg-transparent outline-none resize-none transition-opacity ${
+            isDark ? 'text-white placeholder-gray-500' : 'text-gray-900 placeholder-gray-400'
+          } ${isLimitReached ? 'opacity-50 cursor-not-allowed' : ''}`}
+          placeholder={isLimitReached ? `Message limit reached (${used}/${limit}). Contact administrator.` : "Ask your tutor about the code..."}
           value={chatInput}
+          disabled={isLimitReached || isChatLoading}
           onChange={(e) => setChatInput(e.target.value)}
           onKeyDown={(e) => {
             if (e.key === 'Enter' && !e.shiftKey) {
@@ -79,8 +141,13 @@ export const AiTutorChat = ({
         />
         <button 
           onClick={handleSendChat}
-          disabled={isChatLoading || !chatInput.trim()}
-          className={`p-2 rounded-lg mb-1 flex-shrink-0 transition-all ${!chatInput.trim() || isChatLoading ? 'opacity-50 cursor-not-allowed text-gray-400' : 'bg-blue-600 hover:bg-blue-700 text-white shadow-md'}`}
+          disabled={isChatLoading || !chatInput.trim() || isLimitReached}
+          className={`p-2 rounded-lg mb-1 flex-shrink-0 transition-all cursor-pointer ${
+            !chatInput.trim() || isChatLoading || isLimitReached
+              ? 'opacity-50 cursor-not-allowed text-gray-400' 
+              : 'bg-blue-600 hover:bg-blue-700 text-white shadow-md'
+          }`}
+          title={isLimitReached ? 'Limit reached' : 'Send message'}
         >
           <ArrowRight className="w-5 h-5" />
         </button>

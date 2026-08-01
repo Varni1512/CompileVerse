@@ -18,7 +18,8 @@ export const OutputPanel = ({
   isChatLoading,
   chatInput,
   setChatInput,
-  handleSendChat
+  handleSendChat,
+  aiUsage
 }) => {
   return (
     <div className={`flex-[6] flex flex-col min-h-0 rounded-xl shadow-lg border ${isDark ? 'bg-gray-900/80 border-gray-700' : 'bg-white/90 border-gray-200'}`}>
@@ -153,6 +154,7 @@ export const OutputPanel = ({
             chatInput={chatInput}
             setChatInput={setChatInput}
             handleSendChat={handleSendChat}
+            aiUsage={aiUsage}
           />
         )}
       </div>
