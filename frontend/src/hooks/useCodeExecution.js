@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 
-export const useCodeExecution = (activeApiUrl, language, code, input, mode, testCases, analyzeComplexity, setActiveTab) => {
+export const useCodeExecution = (activeApiUrl, language, code, input, mode, testCases, setActiveTab) => {
   const [output, setOutput] = useState('');
   const [isRunning, setIsRunning] = useState(false);
   const [executionTime, setExecutionTime] = useState(null);
@@ -11,44 +11,27 @@ export const useCodeExecution = (activeApiUrl, language, code, input, mode, test
   const handleSubmit = async () => {
     setIsRunning(true);
     setOutput('');
-    setComplexity('');
     setExecutionTime(null);
     setTestResults(null);
     setActiveTab('output');
 
-    if (analyzeComplexity) {
-      setIsAnalyzing(true);
-      setComplexity('Analyzing in background...');
-    }
-
     try {
       const startTime = Date.now();
 
-      // 1. Execute Code
+      // 1. Execute Code Only
       const payload = mode === 'custom'
         ? { language, code, input }
         : { language, code, testCases };
 
       const endpoint = mode === 'custom' ? '/run' : '/run-tests';
 
-      const runPromise = fetch(`${activeApiUrl}${endpoint}`, {
+      const response = await fetch(`${activeApiUrl}${endpoint}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
-      }).then(res => res.json());
+      });
 
-      // 2. Analyze Complexity (Background)
-      let analyzePromise = null;
-      if (analyzeComplexity) {
-        analyzePromise = fetch(`${activeApiUrl}/analyze`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ code }),
-        }).then(res => res.json()).catch(err => ({ complexity: 'Analysis failed' }));
-      }
-
-      // Wait for execution
-      const data = await runPromise;
+      const data = await response.json();
       const endTime = Date.now();
       setExecutionTime(endTime - startTime);
 
@@ -65,20 +48,10 @@ export const useCodeExecution = (activeApiUrl, language, code, input, mode, test
           setOutput("Error: " + (data.error || 'Execution failed'));
         }
       }
-      setIsRunning(false);
-
-      // Wait for analysis
-      if (analyzePromise) {
-        const analyzeData = await analyzePromise;
-        setComplexity(analyzeData.complexity || 'Analysis failed');
-        setIsAnalyzing(false);
-      }
-
     } catch (error) {
       setOutput("Error: " + error.message);
+    } finally {
       setIsRunning(false);
-      setIsAnalyzing(false);
-      setComplexity('Analysis failed');
     }
   };
 

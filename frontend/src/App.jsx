@@ -33,7 +33,6 @@ function App() {
   const [theme, setTheme] = useState('dark');
   const [copied, setCopied] = useState(false);
   const [activeTab, setActiveTab] = useState('output');
-  const [analyzeComplexity, setAnalyzeComplexity] = useState(false);
   const [showBulkModal, setShowBulkModal] = useState(false);
   const [bulkText, setBulkText] = useState('');
   const [serverStatus, setServerStatus] = useState('waking');
@@ -56,7 +55,7 @@ function App() {
     output, setOutput, isRunning, executionTime, setExecutionTime,
     testResults, setTestResults, complexity, setComplexity,
     isAnalyzing, handleSubmit, handleManualAnalyze
-  } = useCodeExecution(activeApiUrl, language, code, input, mode, testCases, analyzeComplexity, setActiveTab);
+  } = useCodeExecution(activeApiUrl, language, code, input, mode, testCases, setActiveTab);
 
   const isDark = theme === 'dark';
 
