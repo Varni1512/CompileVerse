@@ -133,6 +133,10 @@ function App() {
     localStorage.setItem('selectedLanguage', language);
   }, [language]);
 
+  useEffect(() => {
+    document.body.className = isDark ? 'bg-slate-900 text-white' : 'bg-slate-50 text-slate-900';
+  }, [isDark]);
+
   const handleLanguageChange = (selectedLang) => {
     setLanguage(selectedLang);
     setOutput(''); 

@@ -24,7 +24,7 @@ ${code}
 
     const completion = await groq.chat.completions.create({
         messages: [systemPrompt, ...messages],
-        model: "llama-3.3-70b-versatile",
+        model: "llama3-70b-8192",
     });
 
     const responseText = completion.choices[0]?.message?.content || "";
@@ -48,7 +48,7 @@ Here is the code:
         ${code}`
             }
         ],
-        model: "llama-3.3-70b-versatile",
+        model: "llama3-70b-8192",
     });
 
     const responseText = completion.choices[0]?.message?.content || "";
@@ -83,7 +83,7 @@ Please provide:
 Keep your explanation clear, concise, and beginner-friendly. Focus on helping the user understand and learn from the error.`
             }
         ],
-        model: "llama-3.3-70b-versatile",
+        model: "llama3-70b-8192",
     });
 
     const responseText = completion.choices[0]?.message?.content || "";

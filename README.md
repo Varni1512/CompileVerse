@@ -1,120 +1,156 @@
-# CompileVerse ✨ - Your AI-Powered Coding Companion
+<div align="center">
+  <h1>CompileVerse ✨</h1>
+  <p><strong>Your AI-Powered Intelligent Code Companion</strong></p>
+  
+  <p>
+    <a href="https://reactjs.org/"><img src="https://img.shields.io/badge/React-20232A?style=for-the-badge&logo=react&logoColor=61DAFB" alt="React" /></a>
+    <a href="https://nodejs.org/"><img src="https://img.shields.io/badge/Node.js-339933?style=for-the-badge&logo=nodedotjs&logoColor=white" alt="Node.js" /></a>
+    <a href="https://expressjs.com/"><img src="https://img.shields.io/badge/Express.js-000000?style=for-the-badge&logo=express&logoColor=white" alt="Express" /></a>
+    <a href="https://tailwindcss.com/"><img src="https://img.shields.io/badge/Tailwind_CSS-38B2AC?style=for-the-badge&logo=tailwind-css&logoColor=white" alt="Tailwind" /></a>
+    <a href="https://www.docker.com/"><img src="https://img.shields.io/badge/Docker-2496ED?style=for-the-badge&logo=docker&logoColor=white" alt="Docker" /></a>
+    <a href="https://groq.com/"><img src="https://img.shields.io/badge/Groq_AI-F55036?style=for-the-badge&logo=groq&logoColor=white" alt="Groq" /></a>
+  </p>
+  
+  <p>
+    <a href="https://compileverse.vercel.app/"><img src="https://img.shields.io/badge/Live%20Demo-Visit%20Now!-brightgreen?style=for-the-badge&logo=vercel" alt="Live Demo" /></a>
+  </p>
+</div>
 
-[![React](https://img.shields.io/badge/React-20232A?style=for-the-badge&logo=react&logoColor=61DAFB)](https://reactjs.org/)
-[![Node.js](https://img.shields.io/badge/Node.js-339933?style=for-the-badge&logo=nodedotjs&logoColor=white)](https://nodejs.org/)
-[![Express.js](https://img.shields.io/badge/Express.js-000000?style=for-the-badge&logo=express&logoColor=white)](https://expressjs.com/)
-[![Tailwind CSS](https://img.shields.io/badge/Tailwind_CSS-38B2AC?style=for-the-badge&logo=tailwind-css&logoColor=white)](https://tailwindcss.com/)
-[![Docker](https://img.shields.io/badge/Docker-2496ED?style=for-the-badge&logo=docker&logoColor=white)](https://www.docker.com/)
-[![Groq AI](https://img.shields.io/badge/Groq_AI-F55036?style=for-the-badge&logo=groq&logoColor=white)](https://groq.com/)
+<hr />
 
-CompileVerse is not just another online code compiler. It's an intelligent, full-fledged coding environment designed to help you write better, more efficient code by leveraging the power of Lightning-Fast AI and native compilation tools.
+## 📖 Overview
 
-## 👁️ Live Preview
-
-[![Live Demo](https://img.shields.io/badge/Live%20Demo-Visit%20Now!-brightgreen?style=for-the-badge&logo=vercel)](https://compileverse.vercel.app/)
+**CompileVerse** is an advanced, AI-driven online integrated development environment (IDE). Designed for developers, educators, and students, it provides a seamless and highly optimized environment for coding, testing, and debugging. By integrating **Lightning-Fast AI (via Groq)** and robust native execution runtimes, CompileVerse elevates the standard online coding experience into a professional-grade assistant.
 
 ---
 
-## 📸 Project Screenshot
+## 🚀 Key Features
 
-Here's a glimpse of CompileVerse in action:
-
-![CompileVerse Screenshot](CompileVerse.png)
+| Feature | Description |
+| :--- | :--- |
+| 🌍 **Multi-Language Support** | Write and execute code natively in **C++, Java, and Python** in isolated environments. |
+| 🧠 **AI Code Review** | Instant, context-aware code reviews providing optimization suggestions and best practices. |
+| ⏱️ **Complexity Analysis** | Automatically calculates and breaks down the **Time and Space Complexity** (Big-O) of your logic. |
+| 🐞 **AI Error Explanation** | Say goodbye to cryptic stack traces. Our AI analyzes your runtime errors and explains how to fix them. |
+| 📝 **Multi-Test Case Suite** | Validate your algorithms against multiple custom inputs and expected outputs simultaneously. |
+| 🎨 **Advanced IDE Experience** | Features Monaco Editor, Auto-Save, Multiple Themes, Keyboard Shortcuts, and One-Click Code Download. |
+| 🧹 **Native Code Formatting** | Built-in industry-standard formatters (`black` for Python, `clang-format` for C/C++/Java). |
+| 🛡️ **Admin Dashboard** | Built-in analytics and AI rate-limiting management for server administrators. |
 
 ---
 
-## 🌟 Core Features
+## 🏗️ System Architecture
 
--   **Multi-Language Support**: Compile and run code natively in **Java, C++, Python, and C**.
--   **Multiple Test Cases**: Create multiple custom test cases with expected outputs to rigorously validate your algorithms in a single run.
--   **Native Backend Code Formatting**: Instantly clean up your code using industry-standard formatters (`black` for Python, `clang-format` for C/C++/Java) powered by our robust backend.
--   **AI-Powered Complexity Analysis**: Instantly get the accurate **Time and Space Complexity** for every execution.
--   **AI Code Review**: Click "Review" to receive an optimized version of your code, complete with its own complexity analysis and best practices.
--   **Advanced IDE UX**:
-    -   **Auto-Save**: Your code is safely saved to your browser automatically as you type.
-    -   **Shortcuts**: Hit `Ctrl + Enter` (or `Cmd + Enter`) to instantly run your code.
-    -   **Editor Themes**: Choose from popular themes like Dracula, Monokai, GitHub Dark, and more.
-    -   **Code Download**: Save your code locally with a single click.
+CompileVerse uses a modern client-server architecture:
 
-## 🛠️ Tech Stack
+- **Frontend (React + Vite)**: A highly responsive UI utilizing Tailwind CSS and Monaco Editor. Handles state management, local storage persistence, and API orchestration.
+- **Backend (Node.js + Express)**: A secure execution engine. It accepts code payloads, securely spawns child processes for native compilation/execution, and interacts with the Groq API for AI capabilities.
+- **Database (MongoDB)**: Stores execution analytics, AI usage metrics, and IP-based rate limiting configurations.
 
--   **Frontend**: React, Tailwind CSS, Monaco Editor
--   **Backend**: Node.js, Express.js
--   **AI Integration**: Groq API (Lightning Fast LLaMA 3)
--   **Containerization**: Docker
--   **Formatters**: Black (Python), Clang-Format (C, C++, Java)
+### Core API Endpoints
 
-## 🚀 Getting Started
+- `POST /run` - Executes a single file and returns stdout/stderr.
+- `POST /run-tests` - Executes code against an array of test cases.
+- `POST /analyze` - Analyzes time/space complexity of the provided code.
+- `POST /ai-review` - Streams an intelligent code review using LLM context.
+- `POST /explain-error` - Provides a human-readable explanation of runtime/compilation errors.
 
-Follow these steps to get the project running on your local machine.
+---
 
-### **Step 1: Clone the Repository**
-First, clone the project repository from GitHub and navigate into the project directory.
+## 🛠️ Tech Stack & Dependencies
 
-```sh
+### Client Side
+- **Framework**: React 18 (Vite)
+- **Styling**: Tailwind CSS, Lucide Icons
+- **Editor**: Monaco Editor (`@monaco-editor/react`)
+
+### Server Side
+- **Runtime**: Node.js v18+
+- **Framework**: Express.js
+- **Security & Optimization**: Helmet, Express Rate Limit, CORS
+- **Database**: MongoDB (Mongoose)
+- **AI Integration**: Groq API (LLaMA 3)
+
+### Environment Tools
+- **Containerization**: Docker
+- **Compilers/Interpreters**: GCC (C/C++), JDK (Java), Python 3
+- **Formatters**: `clang-format`, `black`
+
+---
+
+## ⚙️ Local Development Setup
+
+To run CompileVerse locally, follow the steps below.
+
+### 1. Prerequisites
+- [Git](https://git-scm.com/)
+- [Node.js](https://nodejs.org/) (v18+)
+- [Docker](https://www.docker.com/) (Recommended for backend)
+
+### 2. Clone the Repository
+```bash
 git clone https://github.com/Varni1512/CompileVerse.git
 cd CompileVerse
 ```
 
-### **Step 2: Set up the Backend (Docker Recommended)**
-This method uses Docker to run the backend in a containerized environment, which includes all necessary compilers (C, C++, Java), runtimes (Python), and formatters (`black`, `clang-format`).
+### 3. Backend Setup (Docker - Recommended)
+Using Docker ensures that all compilers and formatters are perfectly configured and sandboxed.
 
-1.  **Navigate to the backend directory:**
-    ```sh
-    cd backend
-    ```
+```bash
+cd backend
+touch .env
+```
 
-2.  **Create a `.env` file:**
-    ```sh
-    touch .env
-    ```
-    Add your Groq API key to this file:
-    ```
-    GROQ_API_KEY=YOUR_API_KEY_HERE
-    ```
+**Environment Variables (`backend/.env`)**
+Add the following to your `.env` file:
+```env
+PORT=8000
+GROQ_API_KEY=your_groq_api_key_here
+MONGODB_URI=your_mongodb_connection_string
+ADMIN_PASSWORD=your_secure_admin_password
+CORS_ORIGIN=*
+```
 
-3.  **Build and Run the Docker Container:**
-    From inside the `backend` directory, run the following commands:
-    ```sh
-    # Build the Docker image
-    docker build -t compileverse-backend .
+**Build and Start the Container:**
+```bash
+# Build the image
+docker build -t compileverse-backend .
 
-    # Run the container from the image
-    docker run -d -p 8000:8000 --env-file .env --name compileverse-backend-container compileverse-backend
-    ```
-The backend server will now be running at `http://localhost:8000`.
+# Run the container
+docker run -d -p 8000:8000 --env-file .env --name compileverse-backend-container compileverse-backend
+```
+*The API will be available at `http://localhost:8000`.*
+
+### 4. Frontend Setup
+
+Open a new terminal window at the project root.
+
+```bash
+cd frontend
+npm install
+npm run dev
+```
+*The web interface will be available at `http://localhost:5173`.*
 
 ---
-#### **Alternative: Run Manually**
-This method requires you to have Node.js, GCC, G++, JDK, Python, `black`, and `clang-format` installed directly on your local machine.
-
-1.  `cd backend`
-2.  `npm install`
-3.  Add `GROQ_API_KEY=YOUR_API_KEY_HERE` to `backend/.env`.
-4.  `node index.js`
-
----
-### **Step 3: Set up the Frontend**
-After your backend is running, open a **new terminal window**.
-
-1.  **Navigate to the frontend directory:**
-    ```sh
-    cd frontend
-    ```
-2.  **Install dependencies:**
-    ```sh
-    npm install
-    ```
-3.  **Start the development server:**
-    ```sh
-    npm run dev
-    ```
-The frontend will be available at `http://localhost:5173` and will seamlessly connect to your running backend.
-
 
 ## 🤝 Contributing
 
-Contributions are welcome! Feel free to open an issue or submit a pull request to make CompileVerse even better.
+We welcome contributions to CompileVerse! Please follow these steps:
+
+1. Fork the repository.
+2. Create a new branch (`git checkout -b feature/AmazingFeature`).
+3. Commit your changes (`git commit -m 'Add some AmazingFeature'`).
+4. Push to the branch (`git push origin feature/AmazingFeature`).
+5. Open a Pull Request.
 
 ---
-Made with ❤️ by Varnikumar Patel
+
+## 📜 License
+
+This project is open-source and available under the standard MIT License.
+
+---
+<div align="center">
+  <b>Designed and Developed with ❤️ by Varnikumar Patel</b>
+</div>
