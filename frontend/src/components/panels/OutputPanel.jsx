@@ -19,6 +19,7 @@ export const OutputPanel = ({
   chatInput,
   setChatInput,
   handleSendChat,
+  setChatMessages,
   aiUsage
 }) => {
   return (
@@ -154,6 +155,7 @@ export const OutputPanel = ({
             chatInput={chatInput}
             setChatInput={setChatInput}
             handleSendChat={handleSendChat}
+            setChatMessages={setChatMessages}
             aiUsage={aiUsage}
           />
         )}

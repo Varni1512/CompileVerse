@@ -305,6 +305,7 @@ function App() {
               chatInput={chatInput}
               setChatInput={setChatInput}
               handleSendChat={handleSendChat}
+              setChatMessages={setChatMessages}
               aiUsage={aiUsage}
             />
           </section>

@@ -1,5 +1,5 @@
 import React from 'react';
-import { ArrowRight, Bot, Sparkles, AlertCircle, ShieldAlert, ArrowUpRight } from 'lucide-react';
+import { ArrowRight, Bot, Sparkles, AlertCircle, ShieldAlert, ArrowUpRight, Trash2 } from 'lucide-react';
 import { HighlightedCodeBlock } from './HighlightedCodeBlock';
 import { formatAiReview } from '../../utils/chatFormatters';
 
@@ -11,12 +11,21 @@ export const AiTutorChat = ({
   chatInput, 
   setChatInput, 
   handleSendChat,
+  setChatMessages,
   aiUsage
 }) => {
   const isLimitReached = aiUsage && (aiUsage.limitReached || (aiUsage.loaded && aiUsage.remaining <= 0));
   const used = aiUsage?.used ?? 0;
   const limit = aiUsage?.limit ?? 5;
   const remaining = aiUsage?.remaining ?? Math.max(0, limit - used);
+
+  const handleClearChat = () => {
+    if (setChatMessages) {
+      setChatMessages([
+        { role: 'assistant', content: "Hi! I'm your AI Coding Tutor. How can I help you with your code today?" }
+      ]);
+    }
+  };
 
   return (
     <div className="flex flex-col h-full w-full relative">
@@ -31,7 +40,7 @@ export const AiTutorChat = ({
           <span className="font-semibold">AI Coding Tutor</span>
         </div>
 
-        {/* Dynamic Usage Pill */}
+        {/* Dynamic Usage Pill & Clear Action */}
         <div className="flex items-center space-x-2">
           <div className={`px-2.5 py-1 rounded-full flex items-center space-x-1.5 transition-colors border ${
             isLimitReached 
@@ -50,6 +59,17 @@ export const AiTutorChat = ({
               ({isLimitReached ? 'Limit reached' : `${remaining} left`})
             </span>
           </div>
+
+          {chatMessages.length > 1 && (
+            <button
+              type="button"
+              onClick={handleClearChat}
+              className="p-1 rounded text-gray-400 hover:text-red-400 hover:bg-red-500/10 transition-colors cursor-pointer"
+              title="Clear chat history"
+            >
+              <Trash2 className="w-3.5 h-3.5 text-red-400" />
+            </button>
+          )}
         </div>
       </div>
 
