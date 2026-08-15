@@ -24,11 +24,10 @@ ${code}
 
     const completion = await groq.chat.completions.create({
         messages: [systemPrompt, ...messages],
-        model: "llama3-70b-8192",
+        model: "openai/gpt-oss-120b",
     });
 
-    const responseText = completion.choices[0]?.message?.content || "";
-    return responseText;
+    return completion.choices[0]?.message?.content || "";
 };
 
 // New function for complexity analysis only
@@ -48,7 +47,7 @@ Here is the code:
         ${code}`
             }
         ],
-        model: "llama3-70b-8192",
+        model: "openai/gpt-oss-120b",
     });
 
     const responseText = completion.choices[0]?.message?.content || "";
@@ -83,7 +82,7 @@ Please provide:
 Keep your explanation clear, concise, and beginner-friendly. Focus on helping the user understand and learn from the error.`
             }
         ],
-        model: "llama3-70b-8192",
+        model: "openai/gpt-oss-120b",
     });
 
     const responseText = completion.choices[0]?.message?.content || "";
