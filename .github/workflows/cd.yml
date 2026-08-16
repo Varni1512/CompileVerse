@@ -51,6 +51,4 @@ jobs:
 
     steps:
       - name: Pull image and run docker compose
-        run: |
-          echo "Deploying on home server..."
-          sudo /user/local/bin/compileverse
+        run: sudo /user/local/bin/compileverse
