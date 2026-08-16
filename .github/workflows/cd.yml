@@ -53,10 +53,4 @@ jobs:
       - name: Pull image and run docker compose
         run: |
           echo "Deploying on home server..."
-          cd /home/avneesh/compileverse
-          
-          # Note: If your Docker Hub repository is private, you might need to authenticate docker here first
-          # echo "${{ secrets.DOKERHUB_TOKEN }}" | docker login -u "${{ secrets.DOCKERHUB_USERNAME }}" --password-stdin
-          
-          docker compose pull
-          docker compose up -d
+          sudo /user/local/bin/compileverse
