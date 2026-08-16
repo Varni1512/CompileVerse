@@ -51,4 +51,4 @@ jobs:
 
     steps:
       - name: Pull image and run docker compose
-        run: sudo /user/local/bin/compileverse
+        run: sudo /usr/local/bin/compileverse
