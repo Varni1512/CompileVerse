@@ -24,7 +24,7 @@ ${code}
 
     const completion = await groq.chat.completions.create({
         messages: [systemPrompt, ...messages],
-        model: "openai/gpt-oss-120b",
+        model: process.env.GROQ_MODEL_ID || "openai/gpt-oss-120b",
     });
 
     return completion.choices[0]?.message?.content || "";
@@ -47,7 +47,7 @@ Here is the code:
         ${code}`
             }
         ],
-        model: "openai/gpt-oss-120b",
+        model: process.env.GROQ_MODEL_ID || "openai/gpt-oss-120b",
     });
 
     const responseText = completion.choices[0]?.message?.content || "";
@@ -82,7 +82,7 @@ Please provide:
 Keep your explanation clear, concise, and beginner-friendly. Focus on helping the user understand and learn from the error.`
             }
         ],
-        model: "openai/gpt-oss-120b",
+        model: process.env.GROQ_MODEL_ID || "openai/gpt-oss-120b",
     });
 
     const responseText = completion.choices[0]?.message?.content || "";
