@@ -25,10 +25,26 @@ export const HighlightedCodeBlock = ({ code, lang, isDark }) => {
         <span className={`text-xs font-medium font-mono uppercase ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>{lang || 'Code'}</span>
         <button
           onClick={handleCopy}
-          title="Copy code"
-          className={`p-1.5 rounded-md transition-all ${copied ? 'bg-green-500 text-white' : isDark ? 'bg-gray-700 text-gray-300 hover:bg-gray-600' : 'bg-gray-200 text-gray-600 hover:bg-gray-300'}`}
+          title="Copy snippet"
+          className={`flex items-center space-x-1 px-2 py-1 rounded-md text-xs transition-all ${
+            copied 
+              ? 'bg-green-500 text-white' 
+              : isDark 
+                ? 'bg-gray-700 text-gray-300 hover:bg-gray-600' 
+                : 'bg-gray-200 text-gray-600 hover:bg-gray-300'
+          }`}
         >
-          {copied ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
+          {copied ? (
+            <>
+              <Check className="w-3.5 h-3.5" />
+              <span>Copied!</span>
+            </>
+          ) : (
+            <>
+              <Copy className="w-3.5 h-3.5" />
+              <span>Copy</span>
+            </>
+          )}
         </button>
       </div>
       <div style={{ height: `${height}px` }}>

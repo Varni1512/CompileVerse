@@ -112,7 +112,15 @@ export const useAiChat = (activeApiUrl, language, code, isDark) => {
       }
 
       if (data.reply) {
-        setChatMessages(prev => [...prev, { role: 'assistant', content: data.reply }]);
+        setChatMessages(prev => [
+          ...prev, 
+          { 
+            role: 'assistant', 
+            content: data.reply,
+            sources: data.sources || [],
+            ragEnabled: Boolean(data.ragEnabled)
+          }
+        ]);
       } else {
         throw new Error(data.error || 'Failed to get AI response');
       }

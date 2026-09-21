@@ -29,7 +29,7 @@ export const AiTutorChat = ({
 
   return (
     <div className="flex flex-col h-full w-full relative">
-      {/* Header Bar with Usage Badge */}
+      {/* Header Bar with Model info and Usage Badge */}
       <div className={`px-4 py-2.5 flex items-center justify-between border-b flex-shrink-0 text-xs font-medium ${
         isDark ? 'bg-gray-800/60 border-gray-700/80 text-gray-300' : 'bg-gray-50/90 border-gray-200 text-gray-600'
       }`}>
@@ -38,6 +38,15 @@ export const AiTutorChat = ({
             <Sparkles className="w-3.5 h-3.5 text-blue-400" />
           </div>
           <span className="font-semibold">AI Coding Tutor</span>
+          <span className={`text-[10px] px-2 py-0.5 rounded-full font-mono font-medium border flex items-center gap-1 ${
+            isDark 
+              ? 'bg-purple-950/40 border-purple-800/60 text-purple-300' 
+              : 'bg-purple-50 border-purple-200 text-purple-700'
+          }`}>
+            <span>Groq</span>
+            <span>•</span>
+            <span>RAG Verified </span>
+          </span>
         </div>
 
         {/* Dynamic Usage Pill & Clear Action */}
@@ -107,6 +116,28 @@ export const AiTutorChat = ({
                       </div>
                     </div>
                   ))}
+                  {msg.sources && msg.sources.length > 0 && (
+                    <div className={`mt-2.5 pt-2 border-t flex flex-wrap items-center gap-1.5 text-[11px] ${
+                      isDark ? 'border-gray-700/80 text-purple-300' : 'border-gray-200 text-purple-700'
+                    }`}>
+                      <span className="font-medium flex items-center gap-1">
+                        <span>📚 RAG Verified:</span>
+                      </span>
+                      {msg.sources.map((s, sIdx) => (
+                        <span 
+                          key={sIdx}
+                          className={`px-2 py-0.5 rounded text-[10px] font-mono border ${
+                            isDark 
+                              ? 'bg-purple-900/40 border-purple-700/60 text-purple-200' 
+                              : 'bg-purple-50 border-purple-200 text-purple-800'
+                          }`}
+                          title={`Relevance score: ${(s.relevance * 100).toFixed(0)}%`}
+                        >
+                          {s.topic}
+                        </span>
+                      ))}
+                    </div>
+                  )}
                 </div>
               ) : (
                 <div className="text-sm whitespace-pre-wrap">{msg.content}</div>
