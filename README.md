@@ -1,14 +1,15 @@
 <div align="center">
   <h1>CompileVerse ✨</h1>
-  <p><strong>Your AI-Powered Intelligent Code Companion</strong></p>
+  <p><strong>Your AI-Powered Intelligent Code Companion & Autonomous Agentic IDE</strong></p>
   
   <p>
     <a href="https://reactjs.org/"><img src="https://img.shields.io/badge/React-20232A?style=for-the-badge&logo=react&logoColor=61DAFB" alt="React" /></a>
     <a href="https://nodejs.org/"><img src="https://img.shields.io/badge/Node.js-339933?style=for-the-badge&logo=nodedotjs&logoColor=white" alt="Node.js" /></a>
     <a href="https://expressjs.com/"><img src="https://img.shields.io/badge/Express.js-000000?style=for-the-badge&logo=express&logoColor=white" alt="Express" /></a>
+    <a href="https://js.langchain.com/"><img src="https://img.shields.io/badge/LangChain-1C3C3C?style=for-the-badge&logo=langchain&logoColor=white" alt="LangChain" /></a>
+    <a href="https://groq.com/"><img src="https://img.shields.io/badge/Groq_LLaMA_3.3-F55036?style=for-the-badge&logo=groq&logoColor=white" alt="Groq" /></a>
     <a href="https://tailwindcss.com/"><img src="https://img.shields.io/badge/Tailwind_CSS-38B2AC?style=for-the-badge&logo=tailwind-css&logoColor=white" alt="Tailwind" /></a>
     <a href="https://www.docker.com/"><img src="https://img.shields.io/badge/Docker-2496ED?style=for-the-badge&logo=docker&logoColor=white" alt="Docker" /></a>
-    <a href="https://groq.com/"><img src="https://img.shields.io/badge/Groq_AI-F55036?style=for-the-badge&logo=groq&logoColor=white" alt="Groq" /></a>
   </p>
   
   <p>
@@ -20,7 +21,9 @@
 
 ## 📖 Overview
 
-**CompileVerse** is an advanced, AI-driven online integrated development environment (IDE). Designed for developers, educators, and students, it provides a seamless and highly optimized environment for coding, testing, and debugging. By integrating **Lightning-Fast AI (via Groq)** and robust native execution runtimes, CompileVerse elevates the standard online coding experience into a professional-grade assistant.
+**CompileVerse** is an advanced, production-grade AI-powered online integrated development environment (IDE). Designed for software engineers, competitive programmers, and students, it elevates standard browser compilers into an **Autonomous Agentic Coding Assistant**.
+
+Powered by a **LangChain Retrieval-Augmented Generation (RAG) pipeline**, **Groq LLaMA-3.3**, **Voice AI (STT & TTS)**, and **Sandboxed Native Execution Runtimes**, CompileVerse diagnoses runtime errors, calculates computational complexities, tests edge cases autonomously with tool calling, and provides verified, hallucination-free code tutoring.
 
 ---
 
@@ -28,32 +31,55 @@
 
 | Feature | Description |
 | :--- | :--- |
-| 🌍 **Multi-Language Support** | Write and execute code natively in **C++, Java, and Python** in isolated environments. |
-| 🧠 **AI Code Review** | Instant, context-aware code reviews providing optimization suggestions and best practices. |
-| ⏱️ **Complexity Analysis** | Automatically calculates and breaks down the **Time and Space Complexity** (Big-O) of your logic. |
-| 🐞 **AI Error Explanation** | Say goodbye to cryptic stack traces. Our AI analyzes your runtime errors and explains how to fix them. |
-| 📝 **Multi-Test Case Suite** | Validate your algorithms against multiple custom inputs and expected outputs simultaneously. |
-| 🎨 **Advanced IDE Experience** | Features Monaco Editor, Auto-Save, Multiple Themes, Keyboard Shortcuts, and One-Click Code Download. |
-| 🧹 **Native Code Formatting** | Built-in industry-standard formatters (`black` for Python, `clang-format` for C/C++/Java). |
-| 🛡️ **Admin Dashboard** | Built-in analytics and AI rate-limiting management for server administrators. |
+| 📚 **LangChain RAG Knowledge Base** | Vector search over official C++ STL, Python, Java standard libraries, and DSA algorithmic patterns to ground AI tutoring in verified documentation. |
+| 🎙️ **Voice AI Assistant (STT & TTS)** | Hands-free coding mentorship with real-time Speech-to-Text voice recognition and educational speech synthesis with natural audio filtering. |
+| 🛠️ **Autonomous Agentic Tool Calling** | Equipped with LangChain function calling (`executeCodeTool`, `searchDocsTool`), enabling the AI to test code, verify outputs, and diagnose runtime bugs autonomously. |
+| 🛡️ **Strict Mentor Guardrails** | Non-negotiable context and language boundaries: strictly declines cross-language drift and unrelated queries to prevent hallucinations. |
+| 🎚️ **Draggable & Resizable Panels** | Vertical divider handle allowing smooth panel resizing and a 1-click collapse button to expand the AI Tutor to full 100% height. |
+| 🌍 **Multi-Language Sandbox** | Write and execute code natively in **C++, Java, and Python** in isolated execution runtimes. |
+| 🧠 **AI Code Review & Mentor** | Context-aware tutoring providing step-by-step hints, concept breakdowns, and bug diagnosis without spoon-feeding solutions. |
+| ⏱️ **Complexity Analysis** | Instantly calculates and breaks down the **Time and Space Complexity** (Big-O notation) of your algorithm. |
+| 🐞 **RAG-Backed Error Debugger** | Analyzes compiler errors, NPEs, segmentation faults, and out-of-bounds traps with corresponding official documentation fixes. |
+| 📝 **Multi-Test Case Suite** | Validate algorithms against multiple custom inputs and expected outputs simultaneously with batch imports. |
+| 🎨 **Advanced IDE Experience** | Powered by Monaco Editor, dynamic themes, keyboard shortcuts, fast copy, and one-click file download. |
+| 🛡️ **Admin Analytics Dashboard** | Built-in analytics, per-IP rate limiting, and real-time execution metrics accessible via `#dashboard`. |
 
 ---
 
 ## 🏗️ System Architecture
 
-CompileVerse uses a modern client-server architecture:
+CompileVerse operates on a modular, agentic client-server architecture:
 
-- **Frontend (React + Vite)**: A highly responsive UI utilizing Tailwind CSS and Monaco Editor. Handles state management, local storage persistence, and API orchestration.
-- **Backend (Node.js + Express)**: A secure execution engine. It accepts code payloads, securely spawns child processes for native compilation/execution, and interacts with the Groq API for AI capabilities.
-- **Database (MongoDB)**: Stores execution analytics, AI usage metrics, and IP-based rate limiting configurations.
+```
+┌─────────────────────────────────────────────────────────────┐
+│                    Frontend (React + Vite)                  │
+│   Monaco Editor • Voice AI (STT/TTS) • Resizable Layout     │
+└──────────────────────────────┬──────────────────────────────┘
+                               │ JSON / REST API
+┌──────────────────────────────▼──────────────────────────────┐
+│                  Backend Gateway (Express.js)               │
+│   Rate Limiter • Security & CORS • Child Process Sandbox    │
+└──────────────────────────────┬──────────────────────────────┘
+                               │
+       ┌───────────────────────┴───────────────────────┐
+       ▼                                               ▼
+┌──────────────────────────────┐     ┌──────────────────────────────┐
+│   LangChain RAG & Agent Hub  │     │   Native Execution Engine    │
+│  - Vector Space Retriever    │     │  - C++ (g++) / Java (JDK)    │
+│  - Curated Docs Knowledge    │     │  - Python 3 Runtime          │
+│  - ChatGroq (LLaMA-3.3)      │     │  - Timeout & Memory Bounds   │
+│  - Tools (executeCodeTool)   │     │  - Multi-Test Case Runner    │
+└──────────────────────────────┘     └──────────────────────────────┘
+```
 
 ### Core API Endpoints
 
-- `POST /run` - Executes a single file and returns stdout/stderr.
-- `POST /run-tests` - Executes code against an array of test cases.
-- `POST /analyze` - Analyzes time/space complexity of the provided code.
-- `POST /ai-review` - Streams an intelligent code review using LLM context.
-- `POST /explain-error` - Provides a human-readable explanation of runtime/compilation errors.
+- `POST /run` - Executes a single program and returns stdout/stderr with execution timing.
+- `POST /run-tests` - Executes code against an array of test cases simultaneously.
+- `POST /analyze` - Calculates Big-O Time & Space complexity.
+- `POST /ai-review` - Triggers the LangChain RAG & Agentic Tool Calling pipeline.
+- `POST /explain-error` - RAG-grounded compiler/runtime error explanation.
+- `POST /api/admin/login` - Admin authentication for usage controls and rate limiting.
 
 ---
 
@@ -63,92 +89,69 @@ CompileVerse uses a modern client-server architecture:
 - **Framework**: React 18 (Vite)
 - **Styling**: Tailwind CSS, Lucide Icons
 - **Editor**: Monaco Editor (`@monaco-editor/react`)
+- **Voice AI**: Web SpeechRecognition (STT), Web SpeechSynthesis (TTS)
 
-### Server Side
-- **Runtime**: Node.js v18+
-- **Framework**: Express.js
-- **Security & Optimization**: Helmet, Express Rate Limit, CORS
-- **Database**: MongoDB (Mongoose)
-- **AI Integration**: Groq API (LLaMA 3)
-
-### Environment Tools
-- **Containerization**: Docker
-- **Compilers/Interpreters**: GCC (C/C++), JDK (Java), Python 3
-- **Formatters**: `clang-format`, `black`
+### Server Side & AI Pipeline
+- **Runtime**: Node.js v18+ & Express.js
+- **AI Orchestration**: **LangChain** (`@langchain/core`, `@langchain/groq`)
+- **LLM Engine**: **Groq API** (`llama-3.3-70b-versatile`)
+- **RAG Architecture**: Vector Space TF-IDF / Cosine Similarity Retriever over curated official documentation
+- **Database**: MongoDB (Mongoose) for rate limiting & execution analytics
+- **Security & Sandbox**: Helmet, Express Rate Limit, isolated child process temp sandboxes
 
 ---
 
 ## ⚙️ Local Development Setup
 
-To run CompileVerse locally, follow the steps below.
+To run CompileVerse locally:
 
 ### 1. Prerequisites
 - [Git](https://git-scm.com/)
 - [Node.js](https://nodejs.org/) (v18+)
-- [Docker](https://www.docker.com/) (Recommended for backend)
 
 ### 2. Clone the Repository
 ```bash
 git clone https://github.com/Varni1512/CompileVerse.git
-cd CompileVerse
+cd CompileVerse/CompileVerse-main
 ```
 
-### 3. Backend Setup (Docker - Recommended)
-Using Docker ensures that all compilers and formatters are perfectly configured and sandboxed.
-
+### 3. Backend Setup
 ```bash
 cd backend
-touch .env
+npm install
 ```
 
-**Environment Variables (`backend/.env`)**
-Add the following to your `.env` file:
+**Configure Environment Variables (`backend/.env`):**
 ```env
 PORT=8000
 GROQ_API_KEY=your_groq_api_key_here
+GROQ_MODEL_ID=llama-3.3-70b-versatile
 MONGODB_URI=your_mongodb_connection_string
-ADMIN_PASSWORD=your_secure_admin_password
-CORS_ORIGIN=*
+ADMIN_PASSWORD=admin123
 ```
 
-**Build and Start the Container:**
+**Start the Backend:**
 ```bash
-# Build the image
-docker build -t compileverse-backend .
-
-# Run the container
-docker run -d -p 8000:8000 --env-file .env --name compileverse-backend-container compileverse-backend
+npm run dev
+# or: node index.js
 ```
-*The API will be available at `http://localhost:8000`.*
+*Backend runs on `http://localhost:8000`.*
 
 ### 4. Frontend Setup
 
-Open a new terminal window at the project root.
-
+Open a new terminal window:
 ```bash
 cd frontend
 npm install
 npm run dev
 ```
-*The web interface will be available at `http://localhost:5173`.*
-
----
-
-## 🤝 Contributing
-
-We welcome contributions to CompileVerse! Please follow these steps:
-
-1. Fork the repository.
-2. Create a new branch (`git checkout -b feature/AmazingFeature`).
-3. Commit your changes (`git commit -m 'Add some AmazingFeature'`).
-4. Push to the branch (`git push origin feature/AmazingFeature`).
-5. Open a Pull Request.
+*Frontend runs on `http://localhost:5173`.*
 
 ---
 
 ## 📜 License
 
-This project is open-source and available under the standard MIT License.
+This project is open-source and available under the MIT License.
 
 ---
 <div align="center">
