@@ -1,8 +1,11 @@
 const { ChatGroq } = require("@langchain/groq");
 const { ChatPromptTemplate } = require("@langchain/core/prompts");
 const { Document } = require("@langchain/core/documents");
-const { StringOutputParser } = require("@langchain/core/output_parsers");
+const { tool } = require("@langchain/core/tools");
+const { ToolMessage, AIMessage, HumanMessage, SystemMessage } = require("@langchain/core/messages");
+const { z } = require("zod");
 const { KNOWLEDGE_DOCS } = require("./ragKnowledgeBase");
+const { executeCode } = require("./executeCode");
 const dotenv = require("dotenv");
 
 dotenv.config();
@@ -96,13 +99,13 @@ class RagVectorRetriever {
 
       let similarity = dotProduct / (queryMagnitude * magnitude);
 
-      // Boost score if document matches active editor programming language
+      // Strictly match active language or general algorithm patterns
       if (doc.metadata.language === language) {
         similarity *= 1.5;
       } else if (doc.metadata.language === "general") {
-        similarity *= 1.1;
+        similarity *= 1.0;
       } else {
-        similarity *= 0.5; // Penalize mismatching language docs (e.g. Python docs for C++ query)
+        similarity = 0; // Strictly exclude documents of a different language
       }
 
       return { doc, score: similarity };
@@ -111,9 +114,9 @@ class RagVectorRetriever {
     // Sort descending by score
     scores.sort((a, b) => b.score - a.score);
 
-    // Return top-k matches with non-zero similarity
+    // Return top-k matches with meaningful similarity (>= 0.15)
     return scores
-      .filter(item => item.score > 0.05)
+      .filter(item => item.score >= 0.15)
       .slice(0, topK)
       .map(item => ({
         ...item.doc,
@@ -126,19 +129,59 @@ class RagVectorRetriever {
 const vectorRetriever = new RagVectorRetriever(KNOWLEDGE_DOCS);
 
 // Initialize LangChain ChatGroq model
-const getGroqLlm = () => {
+const getGroqLlm = (temperature = 0.3) => {
   return new ChatGroq({
     apiKey: process.env.GROQ_API_KEY || "missing_key",
     model: process.env.GROQ_MODEL_ID || "llama-3.3-70b-versatile",
-    temperature: 0.3,
+    temperature: temperature,
   });
 };
 
 /**
- * Main RAG Chat Chain:
+ * Define LangChain Agent Tools
+ */
+const executeCodeTool = tool(
+  async ({ language, code, input }) => {
+    try {
+      const result = await executeCode(language, code, input || "");
+      return `Execution Successful.\nSTDOUT:\n${result}`;
+    } catch (err) {
+      return `Execution Failed.\nError:\n${err.error || err.message || JSON.stringify(err)}`;
+    }
+  },
+  {
+    name: "executeCodeTool",
+    description: "Executes code in Python ('py'), C++ ('cpp'), or Java ('java') with optional standard input. Returns the actual execution output (stdout) or compiler/runtime error. Use this whenever the user asks if their code works, asks to test an input, or when you need to verify whether a bug actually triggers.",
+    schema: z.object({
+      language: z.enum(["py", "cpp", "java", "python"]).describe("Programming language: 'py', 'cpp', or 'java'"),
+      code: z.string().describe("The source code to compile and run"),
+      input: z.string().optional().default("").describe("Optional standard input to pass to the running program")
+    })
+  }
+);
+
+const searchDocsTool = tool(
+  async ({ query, language }) => {
+    const docs = await vectorRetriever.retrieve(query, language || "general", 2);
+    if (docs.length === 0) return "No specific documentation found for this query in local knowledge base.";
+    return docs.map(d => `[${d.metadata.topic}]\n${d.pageContent}`).join("\n\n");
+  },
+  {
+    name: "searchDocsTool",
+    description: "Searches the curated RAG knowledge base for verified official language specifications, standard libraries (STL, Collections, itertools, heapq), and DSA algorithmic patterns.",
+    schema: z.object({
+      query: z.string().describe("Concept, error message, or library function to search for"),
+      language: z.string().optional().default("general").describe("Language context: 'cpp', 'py', 'java', or 'general'")
+    })
+  }
+);
+
+/**
+ * Main RAG & Agentic Chat Chain:
  * 1. Retrieves relevant official docs from vector space.
- * 2. Augments prompt with retrieved knowledge.
- * 3. Executes LangChain pipeline to generate verified, hallucination-free advice.
+ * 2. Equips LLM with tools (executeCodeTool & searchDocsTool) for autonomous problem testing.
+ * 3. Handles tool execution cycle if model decides to verify code.
+ * 4. Produces grounded, mentor-style hints.
  */
 const ragAiChat = async (messages, code, language) => {
   // Extract latest user inquiry
@@ -146,10 +189,9 @@ const ragAiChat = async (messages, code, language) => {
   const latestInquiry = userMessages.length > 0 ? userMessages[userMessages.length - 1].content : "";
   const retrievalQuery = `${latestInquiry} ${language} ${code.slice(0, 500)}`;
 
-  // Step 1: Retrieve relevant context using Vector Space Retriever
+  // Step 1: Direct Vector Search Retrieval
   const retrievedDocs = await vectorRetriever.retrieve(retrievalQuery, language, 2);
 
-  // Format RAG context block
   let ragContext = "No specific documentation retrieved. Rely on standard language specifications.";
   const sources = [];
 
@@ -164,55 +206,130 @@ const ragAiChat = async (messages, code, language) => {
     }).join("\n\n");
   }
 
-  // Step 2: Build LangChain ChatPromptTemplate
-  const systemPromptTemplate = `You are an expert programming tutor and strict mentor running inside the CompileVerse IDE.
-Your goal is to guide the user to solve their coding problems without ever giving them the full solution.
+  const langNameMap = {
+    cpp: "C++",
+    py: "Python",
+    python: "Python",
+    java: "Java"
+  };
+  const activeLangName = langNameMap[language] || language;
+
+  // Step 2: System prompt with Ironclad Guardrails + Tool Capabilities
+  const systemPrompt = `You are an expert programming tutor and strict AI mentor running inside the CompileVerse IDE.
+Your goal is to guide the user to solve their coding problems and learn deeply.
 
 === OFFICIAL DOCUMENTATION & PATTERNS (RETRIEVED VIA RAG) ===
-{rag_context}
+${ragContext}
 =============================================================
 
-STRICT RULES:
-1. Ground your explanations in the official documentation and best practices provided above.
-2. NEVER provide the complete corrected code or full solutions.
-3. Only provide hints, explain concepts, point out bugs, or give very small snippets (e.g. 1-2 lines) to illustrate a syntax rule.
-4. The user is currently writing in {language}. Here is their current code context:
-\`\`\`{language}
-{code}
+AVAILABLE TOOLS:
+- executeCodeTool: You can run code in ${activeLangName} to see the actual output or test an edge case!
+- searchDocsTool: You can query the documentation database for extra topics.
+
+STRICT GUARDRAILS & BOUNDARIES (MANDATORY & NON-NEGOTIABLE):
+1. ACTIVE ENVIRONMENT: The user is currently coding in ${activeLangName}. Their current editor code context is:
+\`\`\`${activeLangName}
+${code || "// No code currently in editor"}
 \`\`\`
-5. If the user asks a question completely unrelated to programming or their code, politely reply: "Please ask questions related to programming or your current code."
-6. IMPORTANT FORMATTING: Do NOT use markdown headers like '#', '##', or '###'. Keep your formatting completely clean and plain. You may use backticks for code and ** for bold text, but NO headers.`;
 
-  const chatPrompt = ChatPromptTemplate.fromMessages([
-    ["system", systemPromptTemplate],
-    ...messages.map(m => [m.role === "assistant" ? "assistant" : "user", m.content])
-  ]);
+2. STRICT LANGUAGE & CODE RELEVANCE (ABSOLUTE RULE):
+- You must ONLY answer questions directly related to the user's current code context or ${activeLangName} concepts.
+- If the user asks about a DIFFERENT programming language (e.g. asking about Python while active in Java/C++, or asking about Java while active in Python), YOU MUST NOT ANSWER THE QUESTION. You must decline immediately with:
+  "You are currently working in ${activeLangName}. Please ask questions related to your current ${activeLangName} code."
+- If the user asks any question unrelated to their current code or ${activeLangName}, DO NOT explain. Reply strictly with:
+  "Please ask questions related to your current code in the editor."
 
-  // Step 3: LangChain LCEL Pipeline Execution
-  const llm = getGroqLlm();
-  const outputParser = new StringOutputParser();
-  const chain = chatPrompt.pipe(llm).pipe(outputParser);
+3. NO FULL SOLUTIONS:
+- NEVER provide the complete corrected code or full solutions.
+- Only provide hints, explain concepts, point out bugs, or give very small snippets (e.g. 1-2 lines) to illustrate syntax.
+
+4. TOOL USE:
+- If the user asks whether their current code works or asks to test an input, use the 'executeCodeTool' to run it and report the actual findings.
+
+5. FORMATTING:
+- Do NOT use markdown headers like '#', '##', or '###'. Keep your formatting clean and plain. You may use backticks for code and ** for bold text, but NO headers.`;
+
+  const chatMessages = [
+    new SystemMessage(systemPrompt),
+    ...messages.map(m => m.role === "assistant" ? new AIMessage(m.content) : new HumanMessage(m.content))
+  ];
+
+  const llm = getGroqLlm(0.3);
+  const tools = [executeCodeTool, searchDocsTool];
+  const llmWithTools = llm.bindTools(tools);
+
+  const toolCallsRecord = [];
 
   try {
-    const reply = await chain.invoke({
-      rag_context: ragContext,
-      language: language,
-      code: code || "// No code currently in editor"
-    });
+    // Step 3: Invoke model with tools
+    const aiResponse = await llmWithTools.invoke(chatMessages);
+
+    // If model requested tool calls, execute them
+    if (aiResponse.tool_calls && aiResponse.tool_calls.length > 0) {
+      chatMessages.push(aiResponse);
+
+      for (const tc of aiResponse.tool_calls) {
+        let toolOutput = "";
+        try {
+          if (tc.name === "executeCodeTool") {
+            toolOutput = await executeCodeTool.invoke(tc.args);
+            toolCallsRecord.push({
+              name: "executeCode",
+              args: { language: tc.args.language, input: tc.args.input || "" },
+              summary: "Executed code to test behavior"
+            });
+          } else if (tc.name === "searchDocsTool") {
+            toolOutput = await searchDocsTool.invoke(tc.args);
+            toolCallsRecord.push({
+              name: "searchDocs",
+              args: { query: tc.args.query },
+              summary: "Searched documentation knowledge base"
+            });
+          } else {
+            toolOutput = "Tool not found.";
+          }
+        } catch (toolErr) {
+          toolOutput = `Tool execution error: ${toolErr.message}`;
+        }
+
+        chatMessages.push(new ToolMessage({
+          content: toolOutput,
+          tool_call_id: tc.id
+        }));
+      }
+
+      // Final response from LLM after receiving tool execution results
+      const finalResponse = await llm.invoke(chatMessages);
+      const reply = finalResponse.content;
+      const isRefusal = /currently working in/i.test(reply) || /please ask questions related to/i.test(reply);
+
+      return {
+        reply,
+        sources: isRefusal ? [] : sources,
+        toolCalls: toolCallsRecord,
+        ragEnabled: !isRefusal && sources.length > 0
+      };
+    }
+
+    // No tool calls needed, return direct grounded answer
+    const reply = aiResponse.content;
+    const isRefusal = /currently working in/i.test(reply) || /please ask questions related to/i.test(reply);
 
     return {
       reply,
-      sources,
-      ragEnabled: true
+      sources: isRefusal ? [] : sources,
+      toolCalls: [],
+      ragEnabled: !isRefusal && sources.length > 0
     };
   } catch (error) {
-    console.error("LangChain RAG error, falling back to direct Groq:", error?.message);
-    // If LangChain encounters an issue, fallback gracefully
+    console.error("LangChain RAG Agent error:", error?.message);
     throw error;
   }
 };
 
 module.exports = {
   ragAiChat,
-  vectorRetriever
+  vectorRetriever,
+  executeCodeTool,
+  searchDocsTool
 };

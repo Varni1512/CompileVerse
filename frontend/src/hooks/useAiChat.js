@@ -118,6 +118,7 @@ export const useAiChat = (activeApiUrl, language, code, isDark) => {
             role: 'assistant', 
             content: data.reply,
             sources: data.sources || [],
+            toolCalls: data.toolCalls || [],
             ragEnabled: Boolean(data.ragEnabled)
           }
         ]);

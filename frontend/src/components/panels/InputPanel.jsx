@@ -9,7 +9,9 @@ export const InputPanel = ({
   testCases,
   setTestCases,
   setShowBulkModal,
-  isDark
+  isDark,
+  style,
+  className
 }) => {
   const handleClearSingleTestCase = (idx) => {
     if (testCases.length > 1) {
@@ -24,7 +26,10 @@ export const InputPanel = ({
   };
 
   return (
-    <div className={`flex-[4] flex flex-col min-h-0 rounded-xl shadow-lg border p-2 sm:p-4 ${isDark ? 'bg-gray-900/80 border-gray-700' : 'bg-white/90 border-gray-200'}`}>
+    <div 
+      style={style}
+      className={`flex flex-col min-h-0 rounded-xl shadow-lg border p-2 sm:p-4 overflow-hidden ${isDark ? 'bg-gray-900/80 border-gray-700' : 'bg-white/90 border-gray-200'} ${className || ''}`}
+    >
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-3 space-y-2 sm:space-y-0">
         <div className="flex items-center space-x-2 w-full sm:w-auto">
           <button

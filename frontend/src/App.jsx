@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Play, Activity } from 'lucide-react';
+import { Play, Activity, GripHorizontal } from 'lucide-react';
 import { customThemes } from './themes';
 import { Header } from './components/layout/Header';
 import { EditorToolbar } from './components/editor/EditorToolbar';
@@ -42,6 +42,65 @@ function App() {
   const [testCases, setTestCases] = useState([{ input: '', expectedOutput: '' }]);
   const [editorTheme, setEditorTheme] = useState('vs-dark');
   const editorRef = useRef(null);
+
+  // Vertical Draggable Resizer State (Right Column)
+  const [splitPercent, setSplitPercent] = useState(() => {
+    const saved = localStorage.getItem('compileverse_panel_split');
+    return saved ? Number(saved) : 32; // Default 32% for top input, 68% for output/chat
+  });
+  const [isInputCollapsed, setIsInputCollapsed] = useState(false);
+  const [isDragging, setIsDragging] = useState(false);
+  const rightColumnRef = useRef(null);
+
+  const handleMouseDown = (e) => {
+    e.preventDefault();
+    setIsDragging(true);
+  };
+
+  const handleTouchStart = () => {
+    setIsDragging(true);
+  };
+
+  useEffect(() => {
+    const handleMove = (clientY) => {
+      if (!isDragging || !rightColumnRef.current) return;
+      const rect = rightColumnRef.current.getBoundingClientRect();
+      const relativeY = clientY - rect.top;
+      const newPercent = (relativeY / rect.height) * 100;
+
+      if (newPercent < 8) {
+        setIsInputCollapsed(true);
+      } else {
+        setIsInputCollapsed(false);
+        const clamped = Math.max(12, Math.min(85, newPercent));
+        setSplitPercent(clamped);
+        localStorage.setItem('compileverse_panel_split', String(clamped));
+      }
+    };
+
+    const onMouseMove = (e) => handleMove(e.clientY);
+    const onTouchMove = (e) => {
+      if (e.touches && e.touches[0]) handleMove(e.touches[0].clientY);
+    };
+
+    const stopDragging = () => {
+      setIsDragging(false);
+    };
+
+    if (isDragging) {
+      window.addEventListener('mousemove', onMouseMove);
+      window.addEventListener('mouseup', stopDragging);
+      window.addEventListener('touchmove', onTouchMove);
+      window.addEventListener('touchend', stopDragging);
+    }
+
+    return () => {
+      window.removeEventListener('mousemove', onMouseMove);
+      window.removeEventListener('mouseup', stopDragging);
+      window.removeEventListener('touchmove', onTouchMove);
+      window.removeEventListener('touchend', stopDragging);
+    };
+  }, [isDragging]);
   
   const [activeApiUrl, setActiveApiUrl] = useState(() => {
     if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
@@ -279,20 +338,62 @@ function App() {
             </div>
           </section>
 
-          {/* Right Column: Split into Top (Input) and Bottom (Output) */}
-          <section className="w-full lg:w-5/12 flex flex-col gap-4 min-h-[600px] lg:min-h-0">
-            <InputPanel 
-              mode={mode}
-              setMode={setMode}
-              input={input}
-              setInput={setInput}
-              testCases={testCases}
-              setTestCases={setTestCases}
-              setShowBulkModal={setShowBulkModal}
-              isDark={isDark}
-            />
+          {/* Right Column: Resizable Top (Input) and Bottom (Output) */}
+          <section 
+            ref={rightColumnRef}
+            className="w-full lg:w-5/12 flex flex-col min-h-[600px] lg:min-h-0 relative"
+          >
+            {/* Top Input Panel */}
+            {!isInputCollapsed && (
+              <InputPanel 
+                style={{ flex: `${splitPercent} ${splitPercent} 0%` }}
+                mode={mode}
+                setMode={setMode}
+                input={input}
+                setInput={setInput}
+                testCases={testCases}
+                setTestCases={setTestCases}
+                setShowBulkModal={setShowBulkModal}
+                isDark={isDark}
+              />
+            )}
 
+            {/* Draggable Divider Handle */}
+            <div
+              onMouseDown={handleMouseDown}
+              onTouchStart={handleTouchStart}
+              className={`py-1.5 flex items-center justify-center cursor-row-resize select-none z-10 group relative transition-colors ${
+                isDragging ? 'opacity-100' : 'opacity-85 hover:opacity-100'
+              }`}
+              title="Drag up/down to resize panels. Click button to collapse/expand input."
+            >
+              <div className={`w-full h-1 rounded-full transition-all flex items-center justify-center relative ${
+                isDragging 
+                  ? 'bg-blue-500 h-1.5 shadow-md ring-2 ring-blue-400/50' 
+                  : isDark ? 'bg-gray-700/80 group-hover:bg-blue-500/60' : 'bg-gray-300 group-hover:bg-blue-400'
+              }`}>
+                <div className={`px-2.5 py-0.5 rounded-full text-[10px] font-medium flex items-center gap-1.5 shadow-sm border transition-all ${
+                  isDark ? 'bg-gray-800 border-gray-700 text-gray-300' : 'bg-white border-gray-200 text-gray-600'
+                }`}>
+                  <GripHorizontal className="w-3.5 h-3.5 text-gray-400" />
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setIsInputCollapsed(!isInputCollapsed);
+                    }}
+                    className="hover:text-blue-400 font-semibold cursor-pointer transition-colors"
+                    title={isInputCollapsed ? "Expand Input Panel" : "Collapse Input Panel for Full Chat / Output"}
+                  >
+                    {isInputCollapsed ? "▼ Expand Input" : "▲ Collapse Input"}
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            {/* Bottom Output / Chat Panel */}
             <OutputPanel 
+              style={{ flex: isInputCollapsed ? '1 1 0%' : `${100 - splitPercent} ${100 - splitPercent} 0%` }}
               activeTab={activeTab}
               setActiveTab={setActiveTab}
               mode={mode}

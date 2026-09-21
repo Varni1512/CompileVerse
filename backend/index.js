@@ -192,12 +192,14 @@ app.post("/ai-review", async (req, res) => {
     const aiResult = await aiChat(messages, code, language);
     const replyText = typeof aiResult === 'object' && aiResult !== null ? aiResult.reply : aiResult;
     const sources = typeof aiResult === 'object' && aiResult !== null ? (aiResult.sources || []) : [];
+    const toolCalls = typeof aiResult === 'object' && aiResult !== null ? (aiResult.toolCalls || []) : [];
     const ragEnabled = typeof aiResult === 'object' && aiResult !== null ? Boolean(aiResult.ragEnabled) : false;
     const updatedUsage = await incrementAiUsage(clientIp, req.headers['user-agent']);
     logUsage(clientIp, '/ai-review', language, 'success', req.headers['user-agent']);
     res.status(200).json({
       reply: replyText,
       sources,
+      toolCalls,
       ragEnabled,
       usage: {
         used: updatedUsage.used,

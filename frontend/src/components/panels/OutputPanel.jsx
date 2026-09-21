@@ -20,10 +20,15 @@ export const OutputPanel = ({
   setChatInput,
   handleSendChat,
   setChatMessages,
-  aiUsage
+  aiUsage,
+  style,
+  className
 }) => {
   return (
-    <div className={`flex-[6] flex flex-col min-h-0 rounded-xl shadow-lg border ${isDark ? 'bg-gray-900/80 border-gray-700' : 'bg-white/90 border-gray-200'}`}>
+    <div 
+      style={style}
+      className={`flex flex-col min-h-0 rounded-xl shadow-lg border overflow-hidden ${isDark ? 'bg-gray-900/80 border-gray-700' : 'bg-white/90 border-gray-200'} ${className || ''}`}
+    >
       <div className={`flex border-b ${isDark ? 'border-gray-700' : 'border-gray-200'}`}>
         {[
           { id: 'output', label: 'Output', icon: Terminal },
