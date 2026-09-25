@@ -50,26 +50,112 @@ Powered by a **LangChain Retrieval-Augmented Generation (RAG) pipeline**, **Groq
 
 CompileVerse operates on a modular, agentic client-server architecture:
 
-```
-┌─────────────────────────────────────────────────────────────┐
-│                    Frontend (React + Vite)                  │
-│   Monaco Editor • Voice AI (STT/TTS) • Resizable Layout     │
-└──────────────────────────────┬──────────────────────────────┘
-                               │ JSON / REST API
-┌──────────────────────────────▼──────────────────────────────┐
-│                  Backend Gateway (Express.js)               │
-│   Rate Limiter • Security & CORS • Child Process Sandbox    │
-└──────────────────────────────┬──────────────────────────────┘
-                               │
-       ┌───────────────────────┴───────────────────────┐
-       ▼                                               ▼
-┌──────────────────────────────┐     ┌──────────────────────────────┐
-│   LangChain RAG & Agent Hub  │     │   Native Execution Engine    │
-│  - Vector Space Retriever    │     │  - C++ (g++) / Java (JDK)    │
-│  - Curated Docs Knowledge    │     │  - Python 3 Runtime          │
-│  - ChatGroq (LLaMA-3.3)      │     │  - Timeout & Memory Bounds   │
-│  - Tools (executeCodeTool)   │     │  - Multi-Test Case Runner    │
-└──────────────────────────────┘     └──────────────────────────────┘
+```mermaid
+flowchart TD
+
+subgraph group_ide["IDE Client"]
+  node_app["IDE Workspace<br/>[App.jsx]"]
+  node_editor["Code Editor<br/>[CodeEditor.jsx]"]
+  node_toolbar["Editor Toolbar<br/>[EditorToolbar.jsx]"]
+  node_input["Input Panel<br/>[InputPanel.jsx]"]
+  node_output["Output Panel<br/>[OutputPanel.jsx]"]
+  node_bulk["Test Import<br/>[BulkAddModal.jsx]"]
+  node_execution_hook["Execution State"]
+  node_chat_hook["Chat State<br/>[useAiChat.js]"]
+  node_voice["Voice Assistant<br/>[useVoiceAi.js]"]
+  node_chat_ui["Tutor Chat<br/>[AiTutorChat.jsx]"]
+  node_dashboard["Analytics Dashboard"]
+end
+
+subgraph group_api["API and Controls"]
+  node_server["Express API<br/>[index.js]"]
+  node_limits["AI Rate Limits<br/>[aiLimiter.js]"]
+end
+
+subgraph group_execution["Code Execution"]
+  node_runner["Sandbox Runner<br/>[executeCode.js]"]
+  node_runtime["Language Runtimes"]
+end
+
+subgraph group_tutor["AI Tutor"]
+  node_review["AI Review<br/>[aiCodeReview.js]"]
+  node_rag["RAG Agent<br/>[langchainRag.js]"]
+  node_knowledge["Curated Knowledge"]
+end
+
+subgraph group_operations["Usage Analytics"]
+  node_analytics["Usage Analytics<br/>[analytics.js]"]
+end
+
+node_developer(("Developer"))
+node_groq{{"Groq LLM"}}
+node_mongodb[("MongoDB")]
+node_browser_speech{{"Browser Speech APIs"}}
+
+node_developer -->|"uses IDE"| node_app
+node_app -->|"renders"| node_editor
+node_app -->|"renders"| node_toolbar
+node_app -->|"renders"| node_input
+node_app -->|"renders"| node_output
+node_app -->|"opens import"| node_bulk
+node_app -->|"invokes"| node_execution_hook
+node_app -->|"invokes"| node_chat_hook
+node_app -->|"shows dashboard"| node_dashboard
+node_editor -->|"edits code"| node_app
+node_toolbar -->|"sets language"| node_app
+node_input -->|"sets input"| node_app
+node_bulk -->|"imports cases"| node_app
+node_execution_hook -->|"POST run, tests, analyze"| node_server
+node_server -->|"executes code"| node_runner
+node_runner -->|"runs in sandbox"| node_runtime
+node_server -->|"requests analysis"| node_review
+node_server -->|"checks AI quota"| node_limits
+node_chat_hook -->|"POST review, fetch limits"| node_server
+node_review -->|"uses RAG chat"| node_rag
+node_review -->|"requests completion"| node_groq
+node_rag -->|"indexes documents"| node_knowledge
+node_rag -->|"invokes model"| node_groq
+node_rag -->|"agent executes code"| node_runner
+node_chat_ui -->|"uses voice controls"| node_voice
+node_voice -.->|"recognizes and speaks"| node_browser_speech
+node_dashboard -->|"requests statistics"| node_server
+node_server -->|"records usage"| node_analytics
+node_analytics -.->|"stores metrics"| node_mongodb
+node_limits -.->|"stores quota state"| node_mongodb
+node_execution_hook -->|"provides results"| node_output
+node_chat_hook -->|"provides tutor state"| node_output
+
+click node_app "https://github.com/varni1512/compileverse/blob/main/frontend/src/App.jsx"
+click node_editor "https://github.com/varni1512/compileverse/blob/main/frontend/src/components/editor/CodeEditor.jsx"
+click node_toolbar "https://github.com/varni1512/compileverse/blob/main/frontend/src/components/editor/EditorToolbar.jsx"
+click node_input "https://github.com/varni1512/compileverse/blob/main/frontend/src/components/panels/InputPanel.jsx"
+click node_output "https://github.com/varni1512/compileverse/blob/main/frontend/src/components/panels/OutputPanel.jsx"
+click node_bulk "https://github.com/varni1512/compileverse/blob/main/frontend/src/components/modals/BulkAddModal.jsx"
+click node_execution_hook "https://github.com/varni1512/compileverse/blob/main/frontend/src/hooks/useCodeExecution.js"
+click node_chat_hook "https://github.com/varni1512/compileverse/blob/main/frontend/src/hooks/useAiChat.js"
+click node_voice "https://github.com/varni1512/compileverse/blob/main/frontend/src/hooks/useVoiceAi.js"
+click node_chat_ui "https://github.com/varni1512/compileverse/blob/main/frontend/src/components/chat/AiTutorChat.jsx"
+click node_dashboard "https://github.com/varni1512/compileverse/blob/main/frontend/src/components/dashboard/AnalyticsDashboard.jsx"
+click node_server "https://github.com/varni1512/compileverse/blob/main/backend/index.js"
+click node_limits "https://github.com/varni1512/compileverse/blob/main/backend/aiLimiter.js"
+click node_runner "https://github.com/varni1512/compileverse/blob/main/backend/executeCode.js"
+click node_review "https://github.com/varni1512/compileverse/blob/main/backend/aiCodeReview.js"
+click node_rag "https://github.com/varni1512/compileverse/blob/main/backend/langchainRag.js"
+click node_knowledge "https://github.com/varni1512/compileverse/blob/main/backend/ragKnowledgeBase.js"
+click node_analytics "https://github.com/varni1512/compileverse/blob/main/backend/analytics.js"
+
+classDef toneNeutral fill:#f8fafc,stroke:#334155,stroke-width:1.5px,color:#0f172a
+classDef toneBlue fill:#dbeafe,stroke:#2563eb,stroke-width:1.5px,color:#172554
+classDef toneAmber fill:#fef3c7,stroke:#d97706,stroke-width:1.5px,color:#78350f
+classDef toneMint fill:#dcfce7,stroke:#16a34a,stroke-width:1.5px,color:#14532d
+classDef toneRose fill:#ffe4e6,stroke:#e11d48,stroke-width:1.5px,color:#881337
+classDef toneIndigo fill:#e0e7ff,stroke:#4f46e5,stroke-width:1.5px,color:#312e81
+classDef toneTeal fill:#ccfbf1,stroke:#0f766e,stroke-width:1.5px,color:#134e4a
+class node_app,node_editor,node_toolbar,node_input,node_output,node_bulk,node_execution_hook,node_chat_hook,node_voice,node_chat_ui,node_dashboard,node_browser_speech toneBlue
+class node_server,node_limits,node_mongodb toneAmber
+class node_runner,node_runtime toneMint
+class node_review,node_rag,node_knowledge toneRose
+class node_analytics,node_developer,node_groq toneIndigo
 ```
 
 ### Core API Endpoints
